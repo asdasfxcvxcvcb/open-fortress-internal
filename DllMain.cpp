@@ -1,4 +1,5 @@
 #include "Entry/Entry.h"
+#include <Windows.h>
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -7,7 +8,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	if ((fdwReason == DLL_PROCESS_ATTACH) && !s_bAttached)
 	{
 		G::Entry.Load();
-
 		s_bAttached = true;
 	}
 

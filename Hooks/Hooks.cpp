@@ -10,10 +10,8 @@ void CGlobal_Hooks::Initialize()
 	Hooks::IBaseClientDLL_LevelShutdown::Initialize();
 	Hooks::IBaseClientDLL_LevelInitPostEntity::Initialize();
 	Hooks::ClientModeShared_CreateMove::Initialize();
-	Hooks::CTFDiscordRPC_LevelInit::Initialize();
-	Hooks::CTFDiscordRPC_Reset::Initialize();
 	Hooks::IEngineVGui_Paint::Initialize();
-	Hooks::CTFGameMovement_ProcessMovement::Initialize();
+	//Hooks::CTFGameMovement_ProcessMovement::Initialize(); // Temporarily disabled
 
 	XASSERT(MH_EnableHook(MH_ALL_HOOKS) != MH_STATUS::MH_OK);
 

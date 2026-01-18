@@ -49,7 +49,7 @@ void CFeatures_EnginePrediction::Start(CUserCmd* cmd)
 			pLocal->m_nImpulse() = cmd->impulse;
 	}
 
-	pLocal->UpdateButtonState(cmd->buttons);
+	//pLocal->UpdateButtonState(cmd->buttons); // Temporarily disabled - offset not found
 
 	I::Prediction->SetLocalViewAngles(cmd->viewangles);
 

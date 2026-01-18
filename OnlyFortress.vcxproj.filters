@@ -24,8 +24,6 @@
     <ClCompile Include="Features\ESP\ESP.cpp" />
     <ClCompile Include="Hooks\Definitions\IEngineVGui_Paint.cpp" />
     <ClCompile Include="Entry\Entry.cpp" />
-    <ClCompile Include="Hooks\Definitions\CTFDiscordRPC_Reset.cpp" />
-    <ClCompile Include="Hooks\Definitions\CTFDiscordRPC_LevelInit.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_CreateMove.cpp" />
     <ClCompile Include="SDK\Includes\checksum_md5.cpp" />
     <ClCompile Include="SDK\Includes\usercmd.cpp" />
@@ -37,7 +35,6 @@
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_LevelInitPostEntity.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
     <ClCompile Include="Hooks\Definitions\CTFGameMovement_ProcessMovement.cpp" />
-    <ClCompile Include="Features\Nospread\Nospread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util\Util.h" />

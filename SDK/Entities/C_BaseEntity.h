@@ -241,7 +241,7 @@ public:
 	}
 
 	static void SetPredictionPlayer(C_BasePlayer* player) {
-		static const DWORD s_dwOff = (reinterpret_cast<DWORD>(GetModuleHandleW(L"client.dll")) + 0x105C1F18); //Epic hardcoded shit
+		static const DWORD s_dwOff = (reinterpret_cast<DWORD>(GetModuleHandleW(L"client.dll")) + 0x848B6C);
 
 		*reinterpret_cast<C_BasePlayer**>(s_dwOff) = player;
 	}
