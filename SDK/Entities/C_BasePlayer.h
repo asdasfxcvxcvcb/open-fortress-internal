@@ -38,7 +38,16 @@ public:
 	virtual bool			IsOverridingViewmodel(void) = 0;
 	virtual int				DrawOverriddenViewmodel(C_BaseViewModel* pViewmodel, int flags) = 0;
 	virtual float			GetDefaultAnimSpeed(void) = 0;
-	virtual void			ThirdPersonSwitch(bool bThirdperson) = 0;
+	virtual void			ThirdPersonSwitch(void) = 0;
+
+	// Helper to call ThirdPersonSwitch via signature (vtable is broken)
+	inline void ThirdPersonSwitchSig()
+	{
+		if (U::Offsets.m_dwC_TFPlayer_ThirdPersonSwitch)
+		{
+			reinterpret_cast<void(__thiscall*)(void*)>(U::Offsets.m_dwC_TFPlayer_ThirdPersonSwitch)(this);
+		}
+	}
 	virtual bool			CanSetSoundMixer(void) = 0;
 	virtual int				GetVisionFilterFlags(bool bWeaponsCheck = false) = 0;
 	virtual void			CalculateVisionUsingCurrentFlags(void) = 0;
@@ -108,6 +117,10 @@ public:
 
 	inline int& m_nImpulse() {
 		return *reinterpret_cast<int*>(this + 0x11DC); //Another hardcoded mf
+	}
+
+	inline Vector GetShootPos() {
+		return m_vecOrigin() + m_vecViewOffset();
 	}
 
 public:

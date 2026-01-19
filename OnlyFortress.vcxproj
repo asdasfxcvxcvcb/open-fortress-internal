@@ -24,6 +24,7 @@
     <ProjectGuid>{d66412b0-28b4-42d3-87c3-c9b60ec7ab2c}</ProjectGuid>
     <RootNamespace>OnlyFortress</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <TargetName>necromancer</TargetName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -72,17 +73,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>of</TargetName>
+    <TargetName>necromancer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>of</TargetName>
+    <TargetName>necromancer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>necromancer</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>necromancer</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -96,6 +99,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,6 +123,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,18 +157,25 @@
   <ItemGroup>
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Entry\Entry.cpp" />
+    <ClCompile Include="Features\Aimbot\Aimbot.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
+    <ClCompile Include="Features\Config\Config.cpp" />
     <ClCompile Include="Features\EnginePrediction\EnginePrediction.cpp" />
     <ClCompile Include="Features\ESP\ESP.cpp" />
+    <ClCompile Include="Features\Menu\ImGuiMenu.cpp" />
+    <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
+    <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
     <ClCompile Include="Features\Vars.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_CreateMove.cpp" />
-    <ClCompile Include="Hooks\Definitions\CNetChan_Shutdown.cpp" />
+    <ClCompile Include="Hooks\Definitions\ClientModeShared_OverrideView.cpp" />
     <ClCompile Include="Hooks\Definitions\CPrediction_RunCommand.cpp" />
-    <ClCompile Include="Hooks\Definitions\CTFGameMovement_ProcessMovement.cpp" />
+    <ClCompile Include="Hooks\Definitions\DirectX9_EndScene.cpp" />
+    <ClCompile Include="Hooks\Definitions\DirectX9_Reset.cpp" />
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_FrameStageNotify.cpp" />
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_LevelInitPostEntity.cpp" />
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_LevelShutdown.cpp" />
     <ClCompile Include="Hooks\Definitions\IEngineVGui_Paint.cpp" />
+    <ClCompile Include="Hooks\Definitions\ISurface_LockCursor.cpp" />
     <ClCompile Include="Hooks\Hooks.cpp" />
     <ClCompile Include="SDK\Entities\NetVarManager\NetVarManager.cpp" />
     <ClCompile Include="SDK\Helpers\DrawManager\DrawManager.cpp" />
@@ -172,6 +184,7 @@
     <ClCompile Include="SDK\Includes\checksum_md5.cpp" />
     <ClCompile Include="SDK\Includes\usercmd.cpp" />
     <ClCompile Include="SDK\SDK.cpp" />
+    <ClCompile Include="Util\DirectX\DirectX.cpp" />
     <ClCompile Include="Util\Hash\Hash.cpp" />
     <ClCompile Include="Util\Hook\MinHook\buffer.c" />
     <ClCompile Include="Util\Hook\MinHook\hde\hde32.c" />
@@ -184,13 +197,24 @@
     <ClCompile Include="Util\Pattern\Pattern.cpp" />
     <ClCompile Include="Util\Util.cpp" />
     <ClCompile Include="Util\VFunc\VFunc.cpp" />
+    <ClCompile Include="vendor\imgui\imgui.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_draw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_dx9.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_tables.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Entry\Entry.h" />
+    <ClInclude Include="Features\Aimbot\Aimbot.h" />
     <ClInclude Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.h" />
+    <ClInclude Include="Features\Config\Config.h" />
     <ClInclude Include="Features\EnginePrediction\EnginePrediction.h" />
     <ClInclude Include="Features\ESP\ESP.h" />
+    <ClInclude Include="Features\Menu\ImGuiMenu.h" />
     <ClInclude Include="Features\Nospread\Nospread.h" />
+    <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
     <ClInclude Include="Features\Vars.h" />
     <ClInclude Include="Hooks\Hooks.h" />
     <ClInclude Include="SDK\Entities\C_BaseAnimating.h" />
@@ -258,6 +282,7 @@
     <ClInclude Include="SDK\Interfaces\IVModelInfoClient.h" />
     <ClInclude Include="SDK\Interfaces\IVRenderView.h" />
     <ClInclude Include="SDK\SDK.h" />
+    <ClInclude Include="Util\DirectX\DirectX.h" />
     <ClInclude Include="Util\Hash\Hash.h" />
     <ClInclude Include="Util\Hook\Hook.h" />
     <ClInclude Include="Util\Hook\MinHook\buffer.h" />
@@ -276,6 +301,14 @@
     <ClInclude Include="Util\Pattern\Pattern.h" />
     <ClInclude Include="Util\Util.h" />
     <ClInclude Include="Util\VFunc\VFunc.h" />
+    <ClInclude Include="vendor\imgui\imconfig.h" />
+    <ClInclude Include="vendor\imgui\imgui.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_dx9.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="vendor\imgui\imgui_internal.h" />
+    <ClInclude Include="vendor\imgui\imstb_rectpack.h" />
+    <ClInclude Include="vendor\imgui\imstb_textedit.h" />
+    <ClInclude Include="vendor\imgui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SDK\Includes\gametrace.h" />

@@ -27,4 +27,13 @@ void CUtil_Offsets::Initialize()
 
 	GETPATT(m_dwStartDrawing, "vguimatsurface.dll", "55 8B EC 64 A1 ? ? ? ? 6A FF 68 ? ? ? ? 50 64 89 25 ? ? ? ? 83 EC 14");
 	GETPATT(m_dwFinishDrawing, "vguimatsurface.dll", "55 8B EC 6A FF 68 ? ? ? ? 64 A1 ? ? ? ? 50 64 89 25 ? ? ? ? 51 56 6A 00");
+	
+	// ClientModeShared - simpler pattern focusing on the unique mov ecx + call sequence
+	GETPATT(m_dwClientModeShared, "client.dll", "B9 ? ? ? ? E8 ? ? ? ? 68 ? ? ? ? C7 05");
+	
+	// OverrideView function signature (vtable index 12, not 16!)
+	GETPATT(m_dwClientModeShared_OverrideView, "client.dll", "55 8B EC 83 EC ? 57 E8 ? ? ? ? 8B F8 89 7D");
+	
+	// ThirdPersonSwitch function signature
+	GETPATT(m_dwC_TFPlayer_ThirdPersonSwitch, "client.dll", "55 8B EC 83 EC ? 53 8B D9 89 5D ? E8 ? ? ? ? 84 C0");
 }

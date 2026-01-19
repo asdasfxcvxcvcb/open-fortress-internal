@@ -1,12 +1,56 @@
 #include "ESP.h"
-
 #include "../Vars.h"
+#include "../../vendor/imgui/imgui.h"
+
+// Helper function to convert world position to screen using Source engine
+static bool WorldToScreen(const Vector& vWorld, ImVec2& vScreen)
+{
+	Vector2D screenPos;
+	if (!H::Draw.WorldPosToScreenPos(vWorld, screenPos))
+		return false;
+	
+	vScreen.x = screenPos.x;
+	vScreen.y = screenPos.y;
+	return true;
+}
+
+// Helper to draw text with ImGui
+static void DrawText(ImDrawList* drawList, const ImVec2& pos, ImU32 color, const char* text, bool centerX = false, bool centerY = false)
+{
+	if (!drawList || !text)
+		return;
+
+	ImVec2 textSize = ImGui::CalcTextSize(text);
+	ImVec2 drawPos = pos;
+	
+	if (centerX)
+		drawPos.x -= textSize.x / 2.0f;
+	if (centerY)
+		drawPos.y -= textSize.y / 2.0f;
+
+	// Draw text outline (black)
+	drawList->AddText(ImVec2(drawPos.x - 1, drawPos.y), IM_COL32(0, 0, 0, 255), text);
+	drawList->AddText(ImVec2(drawPos.x + 1, drawPos.y), IM_COL32(0, 0, 0, 255), text);
+	drawList->AddText(ImVec2(drawPos.x, drawPos.y - 1), IM_COL32(0, 0, 0, 255), text);
+	drawList->AddText(ImVec2(drawPos.x, drawPos.y + 1), IM_COL32(0, 0, 0, 255), text);
+	
+	// Draw text
+	drawList->AddText(drawPos, color, text);
+}
 
 void CFeatures_ESP::Render()
 {
 	static bool s_bIgnoreTeam = false;
 
 	if (I::EngineVGui->IsGameUIVisible() || !I::EngineClient->IsInGame())
+		return;
+
+	if (!Vars::ESP::Enabled)
+		return;
+
+	// Get ImGui draw list
+	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+	if (!drawList)
 		return;
 
 	int n, x, y, w, h;
@@ -20,109 +64,130 @@ void CFeatures_ESP::Render()
 	if (!pLocal)
 		return;
 
-	Rect_t s;
-	for (n = nMaxClients; n < nMaxEntities; n++)
+	ImVec2 screenPos;
+	
+	// Render world items (ammo, health, powerups, weapons)
+	if (Vars::ESP::Items)
 	{
-		C_BaseEntity* pEntity = C_BaseEntity::Instance(n);
-
-		if (!pEntity || pEntity->IsDormant())
-			continue;
-
-		ClientClass* pCC = pEntity->GetClientClass();
-
-		if (!pCC)
-			continue;
-
-		switch (pCC->m_ClassID)
+		for (n = nMaxClients; n < nMaxEntities; n++)
 		{
-			case CTFAmmoPack:
+			C_BaseEntity* pEntity = C_BaseEntity::Instance(n);
+
+			if (!pEntity || pEntity->IsDormant())
+				continue;
+
+			ClientClass* pCC = pEntity->GetClientClass();
+
+			if (!pCC)
+				continue;
+
+			switch (pCC->m_ClassID)
 			{
-				if (!H::Draw.WorldPosToScreenPos(pEntity->WorldSpaceCenter(), s))
-					break;
-
-				H::Draw.String(EFonts::PICKUPS, s.x, s.y, COLOR_GREY, TXT_CENTERXY, L"ammo");
-
-				break;
-			}
-			case CCondPowerup:
-			{
-				C_CondPowerup* pPowerup = pEntity->As<C_CondPowerup*>();
-
-				if (!pPowerup || !H::Draw.WorldPosToScreenPos(pPowerup->WorldSpaceCenter(), s))
-					break;
-
-				const int nModelIndex = pPowerup->m_nModelIndex();
-
-				if (m_mapPowerups.find(nModelIndex) == m_mapPowerups.end())
-					break;
-
-				H::Draw.String(EFonts::PICKUPS, s.x, s.y, COLOR_YELLOW, TXT_CENTERXY, m_mapPowerups[nModelIndex]);
-				s.y += H::Draw.GetFontHeight(EFonts::PICKUPS);
-
-				if (pPowerup->m_bRespawning())
+				case CTFAmmoPack:
 				{
-					const float flRespawn = (pPowerup->m_flRespawnTick() - I::GlobalVarsBase->curtime);
+					if (!Vars::ESP::Ammo)
+						break;
+						
+					if (!WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+						break;
 
-					H::Draw.String(EFonts::PICKUPS, s.x, s.y, COLOR_YELLOW, TXT_CENTERXY, L"%.1f", flRespawn);
-					s.y += H::Draw.GetFontHeight(EFonts::PICKUPS);
-				}
-
-				break;
-			}
-			case CWeaponSpawner:
-			{
-				C_WeaponSpawner* pSpawn = pEntity->As<C_WeaponSpawner*>();
-
-				if (!pSpawn || !H::Draw.WorldPosToScreenPos(pSpawn->WorldSpaceCenter(), s))
-					break;
-
-				const Color clrRender = pSpawn->m_bSuperWeapon() ? COLOR_YELLOW : COLOR_GREY;
-
-				char szArray[64];
-				pSpawn->GetWeaponName(szArray);
-
-				std::string szWeapon = (szArray + 10);
-				std::transform(szWeapon.begin(), szWeapon.end(), szWeapon.begin(),
-					[](unsigned char c) { return ::tolower(c); });
-
-				H::Draw.String(EFonts::PICKUPS, s.x, s.y, clrRender, TXT_CENTERXY, szWeapon.c_str());
-				s.y += H::Draw.GetFontHeight(EFonts::PICKUPS);
-
-				if (pSpawn->m_bRespawning())
-				{
-					const float flRespawn = (pSpawn->m_flRespawnTick() - I::GlobalVarsBase->curtime);
-
-					H::Draw.String(EFonts::PICKUPS, s.x, s.y, clrRender, TXT_CENTERXY, L"%.1fs", flRespawn);
-					s.y += H::Draw.GetFontHeight(EFonts::PICKUPS);
-				}
-
-				break;
-			}
-			case CBaseAnimating:
-			{
-				const int nModelIndex = pEntity->m_nModelIndex();
-
-				if (IsAmmo(nModelIndex) && H::Draw.WorldPosToScreenPos(pEntity->WorldSpaceCenter(), s))
-				{
-					H::Draw.String(EFonts::PICKUPS, s.x, s.y, COLOR_GREY, TXT_CENTERXY, L"ammo");
+					DrawText(drawList, screenPos, IM_COL32(150, 150, 150, 255), "ammo", true, true);
 					break;
 				}
-
-				if (IsHealth(nModelIndex) && H::Draw.WorldPosToScreenPos(pEntity->WorldSpaceCenter(), s))
+				case CCondPowerup:
 				{
-					H::Draw.String(EFonts::PICKUPS, s.x, s.y, COLOR_GREEN, TXT_CENTERXY, L"health");
+					if (!Vars::ESP::Powerups)
+						break;
+						
+					C_CondPowerup* pPowerup = pEntity->As<C_CondPowerup*>();
+
+					if (!pPowerup || !WorldToScreen(pPowerup->WorldSpaceCenter(), screenPos))
+						break;
+
+					const int nModelIndex = pPowerup->m_nModelIndex();
+
+					if (m_mapPowerups.find(nModelIndex) == m_mapPowerups.end())
+						break;
+
+					// Convert wchar_t to char
+					char powerupName[64];
+					size_t convertedChars = 0;
+					wcstombs_s(&convertedChars, powerupName, sizeof(powerupName), m_mapPowerups[nModelIndex], _TRUNCATE);
+					
+					DrawText(drawList, screenPos, IM_COL32(255, 255, 0, 255), powerupName, true, true);
+					screenPos.y += 15;
+
+					if (pPowerup->m_bRespawning())
+					{
+						const float flRespawn = (pPowerup->m_flRespawnTick() - I::GlobalVarsBase->curtime);
+						char respawnText[32];
+						sprintf_s(respawnText, "%.1f", flRespawn);
+						DrawText(drawList, screenPos, IM_COL32(255, 255, 0, 255), respawnText, true, true);
+					}
+
 					break;
 				}
+				case CWeaponSpawner:
+				{
+					if (!Vars::ESP::Weapons)
+						break;
+						
+					C_WeaponSpawner* pSpawn = pEntity->As<C_WeaponSpawner*>();
 
-				break;
+					if (!pSpawn || !WorldToScreen(pSpawn->WorldSpaceCenter(), screenPos))
+						break;
+
+					const ImU32 color = pSpawn->m_bSuperWeapon() ? IM_COL32(255, 255, 0, 255) : IM_COL32(150, 150, 150, 255);
+
+					char szArray[64];
+					pSpawn->GetWeaponName(szArray);
+
+					std::string szWeapon = (szArray + 10);
+					std::transform(szWeapon.begin(), szWeapon.end(), szWeapon.begin(),
+						[](unsigned char c) { return ::tolower(c); });
+
+					DrawText(drawList, screenPos, color, szWeapon.c_str(), true, true);
+					screenPos.y += 15;
+
+					if (pSpawn->m_bRespawning())
+					{
+						const float flRespawn = (pSpawn->m_flRespawnTick() - I::GlobalVarsBase->curtime);
+						char respawnText[32];
+						sprintf_s(respawnText, "%.1fs", flRespawn);
+						DrawText(drawList, screenPos, color, respawnText, true, true);
+					}
+
+					break;
+				}
+				case CBaseAnimating:
+				{
+					const int nModelIndex = pEntity->m_nModelIndex();
+
+					if (Vars::ESP::Ammo && IsAmmo(nModelIndex) && WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+					{
+						DrawText(drawList, screenPos, IM_COL32(150, 150, 150, 255), "ammo", true, true);
+						break;
+					}
+
+					if (Vars::ESP::Health && IsHealth(nModelIndex) && WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+					{
+						DrawText(drawList, screenPos, IM_COL32(0, 255, 0, 255), "health", true, true);
+						break;
+					}
+
+					break;
+				}
+				default:
+					break;
 			}
-			default:
-				break;
 		}
 	}
 
-	player_info_t pi;
-	for (n = 1; n < nMaxClients; n++)
+	// Render players
+	if (Vars::ESP::Players)
+	{
+		player_info_t pi;
+		for (n = 1; n < nMaxClients; n++)
 	{
 		if (n == nLocalIndex)
 			continue;
@@ -149,109 +214,119 @@ void CFeatures_ESP::Render()
 		float r, g, b;
 		pPlayer->GetGlowEffectColor(&r, &g, &b);
 
-		const Color clrRender = { static_cast<byte>(r * 255.0f), static_cast<byte>(g * 255.0f), static_cast<byte>(b * 255.0f), 255 };
-		const Color clrHealth = Util::GetHealthColor(nHealth, nMaxHealth);
+		const ImU32 boxColor = IM_COL32(static_cast<int>(r * 255.0f), static_cast<int>(g * 255.0f), static_cast<int>(b * 255.0f), 255);
+		
+		// Get health color
+		ImU32 healthColor;
+		if (nHealth > nMaxHealth)
+			healthColor = IM_COL32(0, 128, 255, 255); // Blue for overheal
+		else if (nHealth < 25)
+			healthColor = IM_COL32(255, 0, 0, 255); // Red
+		else if (nHealth < 50)
+			healthColor = IM_COL32(255, 128, 0, 255); // Orange
+		else if (nHealth < 80)
+			healthColor = IM_COL32(255, 255, 0, 255); // Yellow
+		else
+			healthColor = IM_COL32(0, 255, 0, 255); // Green
 
-		//if (box)
+		// Draw box
+		if (Vars::ESP::PlayerBoxes)
 		{
-			H::Draw.OutlinedRect(x, y, w, h, clrRender);
-
-			//Outline
-			H::Draw.OutlinedRect(x - 1, y - 1, w + 2, h + 2, COLOR_BLACK);
-
-			//Inline
-			H::Draw.OutlinedRect(x + 1, y + 1, w - 2, h - 2, COLOR_BLACK);
+			drawList->AddRect(ImVec2((float)x, (float)y), ImVec2((float)(x + w), (float)(y + h)), boxColor, 0.0f, 0, 2.0f);
+			
+			// Draw box outline
+			drawList->AddRect(ImVec2((float)(x - 1), (float)(y - 1)), ImVec2((float)(x + w + 1), (float)(y + h + 1)), IM_COL32(0, 0, 0, 255), 0.0f, 0, 1.0f);
+			drawList->AddRect(ImVec2((float)(x + 1), (float)(y + 1)), ImVec2((float)(x + w - 1), (float)(y + h - 1)), IM_COL32(0, 0, 0, 255), 0.0f, 0, 1.0f);
 		}
 
-		if (I::EngineClient->GetPlayerInfo(n, &pi))
+		// Draw player name
+		if (Vars::ESP::PlayerNames && I::EngineClient->GetPlayerInfo(n, &pi))
 		{
-			H::Draw.String(EFonts::ESP_NAME,
-				x + (w / 2),
-				y - (H::Draw.GetFontHeight(EFonts::ESP_NAME) + 2),
-				{ 255, 255, 255, 255 },
-				TXT_CENTERX,
-				Util::ConvertUtf8ToWide(pi.name).c_str());
+			DrawText(drawList, ImVec2((float)(x + w / 2), (float)(y - 17)), IM_COL32(255, 255, 255, 255), pi.name, true, false);
 		}
 
-		const int nDrawX = x + (w + 3);
+		const int nDrawX = x + w + 3;
 		int nDrawY = y;
 
-		//if (health_text)
+		// Draw health text
+		if (Vars::ESP::PlayerHealth)
 		{
-			H::Draw.String(EFonts::ESP, nDrawX, nDrawY, clrHealth, TXT_DEFAULT, L"%i/%i", nHealth, nMaxHealth);
-			nDrawY += H::Draw.GetFontHeight(EFonts::ESP);
+			char healthText[32];
+			sprintf_s(healthText, "%i", nHealth); // Show current health only
+			DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), healthColor, healthText);
+			nDrawY += 15;
 		}
 
-		//if (conditions)
+		// Draw conditions
+		if (Vars::ESP::PlayerConditions)
 		{
 			if (pPlayer->InCondUber())
 			{
-				H::Draw.String(EFonts::ESP, nDrawX, nDrawY, COLOR_YELLOW, TXT_DEFAULT, L"INVULNERABLE");
-				nDrawY += H::Draw.GetFontHeight(EFonts::ESP);
+				DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), IM_COL32(255, 255, 0, 255), "INVULNERABLE");
+				nDrawY += 15;
 			}
 
 			if (pPlayer->InCondCrit())
 			{
-				H::Draw.String(EFonts::ESP, nDrawX, nDrawY, COLOR_YELLOW, TXT_DEFAULT, L"CRITS");
-				nDrawY += H::Draw.GetFontHeight(EFonts::ESP);
+				DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), IM_COL32(255, 255, 0, 255), "CRITS");
+				nDrawY += 15;
 			}
 
 			if (pPlayer->InCondBerserk())
 			{
-				H::Draw.String(EFonts::ESP, nDrawX, nDrawY, COLOR_YELLOW, TXT_DEFAULT, L"BERSERK");
-				nDrawY += H::Draw.GetFontHeight(EFonts::ESP);
+				DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), IM_COL32(255, 255, 0, 255), "BERSERK");
+				nDrawY += 15;
 			}
 
 			if (pPlayer->InCondHaste())
 			{
-				H::Draw.String(EFonts::ESP, nDrawX, nDrawY, COLOR_YELLOW, TXT_DEFAULT, L"HASTE");
-				nDrawY += H::Draw.GetFontHeight(EFonts::ESP);
+				DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), IM_COL32(255, 255, 0, 255), "HASTE");
+				nDrawY += 15;
 			}
 
 			if (pPlayer->InCondShield())
 			{
-				H::Draw.String(EFonts::ESP, nDrawX, nDrawY, COLOR_YELLOW, TXT_DEFAULT, L"SHIELD");
-				nDrawY += H::Draw.GetFontHeight(EFonts::ESP);
+				DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), IM_COL32(255, 255, 0, 255), "SHIELD");
+				nDrawY += 15;
 			}
 		}
 
-		//if (active_weapon)
+		// Draw active weapon
+		if (Vars::ESP::PlayerWeapons)
 		{
 			C_BaseCombatWeapon* pWeapon = pPlayer->GetActiveWeapon();
-
 			if (pWeapon)
 			{
 				std::string szWeapon = (pWeapon->GetName() + 10);
-
-				//Some of the names are all caps, some all lowercase, some mixed so lets just convert to lowercase.
 				std::transform(szWeapon.begin(), szWeapon.end(), szWeapon.begin(),
 					[](unsigned char c) { return std::tolower(c); });
 
-				H::Draw.String(EFonts::ESP_WEAPON,
-					x + (w / 2),
-					y + (h + 2),
-					COLOR_GREY,
-					TXT_CENTERX,
-					szWeapon.c_str());
+				DrawText(drawList, ImVec2((float)(x + w / 2), (float)(y + h + 2)), IM_COL32(150, 150, 150, 255), szWeapon.c_str(), true, false);
 			}
 		}
 
-		//if (health_bar)
+		// Draw health bar
+		if (Vars::ESP::PlayerHealthBar)
 		{
-			x -= 1;
-
 			const float flMaxHealth = static_cast<float>(nMaxHealth);
 			const float flHealth = U::Math.Clamp<float>(static_cast<float>(nHealth), 1.0f, flMaxHealth);
 
 			static const int nWidth = 2;
-			const int nHeight = (h + (flHealth < flMaxHealth ? 2 : 1));
-			const int nHeight2 = (h + 1);
+			const int nHeight = h + 1;
 
 			const float ratio = (flHealth / flMaxHealth);
-			H::Draw.Rect(static_cast<int>(((x - nWidth) - 2)), static_cast<int>((y + nHeight - (nHeight * ratio))), nWidth, static_cast<int>((nHeight * ratio)), clrHealth);
-			H::Draw.OutlinedRect(static_cast<int>(((x - nWidth) - 2) - 1), static_cast<int>((y + nHeight - (nHeight * ratio)) - 1), nWidth + 2, static_cast<int>((nHeight * ratio) + 1), COLOR_BLACK);
-
-			x += 1;
+			const int barHeight = static_cast<int>(nHeight * ratio);
+			const int barY = y + nHeight - barHeight;
+			
+			// Draw health bar background
+			drawList->AddRectFilled(ImVec2((float)(x - 5), (float)y), ImVec2((float)(x - 3), (float)(y + nHeight)), IM_COL32(0, 0, 0, 180));
+			
+			// Draw health bar
+			drawList->AddRectFilled(ImVec2((float)(x - 5), (float)barY), ImVec2((float)(x - 3), (float)(y + nHeight)), healthColor);
+			
+			// Draw health bar outline
+			drawList->AddRect(ImVec2((float)(x - 6), (float)(y - 1)), ImVec2((float)(x - 2), (float)(y + nHeight + 1)), IM_COL32(0, 0, 0, 255));
+		}
 		}
 	}
 }

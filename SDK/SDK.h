@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Helpers/Helpers.h"
+#include "Globals.h"
+#include "Interfaces/IClientMode.h"
 
 namespace I { inline void* TFGameMovement = nullptr; }
 
