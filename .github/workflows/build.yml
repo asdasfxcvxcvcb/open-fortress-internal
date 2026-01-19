@@ -13,33 +13,24 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         submodules: recursive
     
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
     
     - name: Setup NuGet
-      uses: nuget/setup-nuget@v1
+      uses: nuget/setup-nuget@v2
     
     - name: Restore NuGet packages
       run: nuget restore open-fortress-internal/OnlyFortress.vcxproj
     
-    - name: Build Debug
-      run: msbuild open-fortress-internal/OnlyFortress.vcxproj /p:Configuration=Debug /p:Platform=x86 /m
-    
-    - name: Build Release
+    - name: Build Release x86
       run: msbuild open-fortress-internal/OnlyFortress.vcxproj /p:Configuration=Release /p:Platform=x86 /m
     
-    - name: Upload Debug Build
-      uses: actions/upload-artifact@v3
-      with:
-        name: necromancer-debug
-        path: open-fortress-internal/Debug/necromancer.dll
-    
     - name: Upload Release Build
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: necromancer-release
+        name: necromancer-release-x86
         path: open-fortress-internal/Release/necromancer.dll
