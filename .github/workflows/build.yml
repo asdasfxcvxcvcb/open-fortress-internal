@@ -24,13 +24,13 @@ jobs:
       uses: nuget/setup-nuget@v2
     
     - name: Restore NuGet packages
-      run: nuget restore open-fortress-internal/OnlyFortress.vcxproj
+      run: nuget restore OnlyFortress.vcxproj
     
     - name: Build Release x86
-      run: msbuild open-fortress-internal/OnlyFortress.vcxproj /p:Configuration=Release /p:Platform=x86 /m
+      run: msbuild OnlyFortress.vcxproj /p:Configuration=Release /p:Platform=x86 /m
     
     - name: Upload Release Build
       uses: actions/upload-artifact@v4
       with:
         name: necromancer-release-x86
-        path: open-fortress-internal/Release/necromancer.dll
+        path: Release/necromancer.dll
