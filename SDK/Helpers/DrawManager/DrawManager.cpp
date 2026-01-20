@@ -1,4 +1,6 @@
 #include "DrawManager.h"
+#include <wingdi.h>
+#include "../../../Util/Math/Math.h"
 
 void CHelpers_DrawManager::Initialize()
 {

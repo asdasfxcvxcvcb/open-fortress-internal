@@ -32,6 +32,7 @@ public:
 	DWORD m_dwClientModeShared = 0x0;
 	DWORD m_dwClientModeShared_OverrideView = 0x0;
 	DWORD m_dwC_TFPlayer_ThirdPersonSwitch = 0x0;
+	DWORD MoveHelper = 0x0;
 };
 
 namespace U { inline CUtil_Offsets Offsets; }

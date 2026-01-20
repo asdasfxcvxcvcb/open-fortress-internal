@@ -1,6 +1,7 @@
 #include "Entry.h"
 #include "../Features/Menu/ImGuiMenu.h"
 #include "../Features/Config/Config.h"
+#include "../Util/Offsets/Offsets.h"
 
 void CGlobal_Entry::Load()
 {
@@ -34,6 +35,10 @@ void CGlobal_Entry::Load()
 
 			if (U::Offsets.m_dwClientModeShared != 0x0)
 				I::ClientModeShared = *reinterpret_cast<CClientModeShared**>(U::Offsets.m_dwClientModeShared + 0x1);
+
+			if (U::Offsets.MoveHelper != 0x0) {
+				I::MoveHelper = **reinterpret_cast<IMoveHelper***>(U::Offsets.MoveHelper + 0x2);
+			}
 		}
 	}
 
@@ -50,39 +55,19 @@ void CGlobal_Entry::Load()
 
 void CGlobal_Entry::Unload()
 {
-	try
-	{
-		if (I::Cvar)
-			I::Cvar->ConsoleColorPrintf({ 255, 150, 0, 255 }, "[Necromancer] Unloading...\n");
-	}
-	catch (...) {}
+	if (I::Cvar)
+		I::Cvar->ConsoleColorPrintf({ 255, 150, 0, 255 }, "[Necromancer] Unloading...\n");
 
-	try
-	{
-		F::ImGuiMenu.Shutdown();
-	}
-	catch (...) {}
+	F::ImGuiMenu.Shutdown();
 
 	Sleep(100);
 
-	try
-	{
-		MH_DisableHook(MH_ALL_HOOKS);
-	}
-	catch (...) {}
+	MH_DisableHook(MH_ALL_HOOKS);
 	
 	Sleep(100);
 	
-	try
-	{
-		MH_Uninitialize();
-	}
-	catch (...) {}
+	MH_Uninitialize();
 	
-	try
-	{
-		if (I::Cvar)
-			I::Cvar->ConsoleColorPrintf({ 15, 150, 150, 255 }, "[Necromancer] Unloaded. enjoy being a retarded legit\n");
-	}
-	catch (...) {}
+	if (I::Cvar)
+		I::Cvar->ConsoleColorPrintf({ 15, 150, 150, 255 }, "[Necromancer] Unloaded. enjoy being a retarded legit\n");
 }

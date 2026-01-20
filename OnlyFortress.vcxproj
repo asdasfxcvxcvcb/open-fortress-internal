@@ -132,6 +132,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -185,7 +187,6 @@
     <ClCompile Include="SDK\Includes\usercmd.cpp" />
     <ClCompile Include="SDK\SDK.cpp" />
     <ClCompile Include="Util\DirectX\DirectX.cpp" />
-    <ClCompile Include="Util\Hash\Hash.cpp" />
     <ClCompile Include="Util\Hook\MinHook\buffer.c" />
     <ClCompile Include="Util\Hook\MinHook\hde\hde32.c" />
     <ClCompile Include="Util\Hook\MinHook\hde\hde64.c" />

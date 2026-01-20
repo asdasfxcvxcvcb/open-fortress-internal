@@ -5,8 +5,8 @@
 class CFeatures_EnginePrediction
 {
 public:
-	void Start(CUserCmd* cmd);
-	void Finish();
+	void Start(C_TFPlayer* pLocal, CUserCmd* cmd);
+	void Finish(C_TFPlayer* pLocal);
 
 private:
 	int GetTickbase(C_TFPlayer* pLocal, CUserCmd* cmd);
@@ -16,6 +16,9 @@ private:
 	float m_fOldCurrentTime = 0.0f;
 	float m_fOldFrameTime   = 0.0f;
 	int m_nOldTickCount     = 0;
+
+	bool bOldIsFirstPrediction = false;
+	bool bOldInPrediction = false;
 };
 
 namespace F { inline CFeatures_EnginePrediction EnginePrediction; }

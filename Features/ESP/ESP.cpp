@@ -1,6 +1,7 @@
 #include "ESP.h"
 #include "../Vars.h"
 #include "../../vendor/imgui/imgui.h"
+#include "../../Util/Math/Math.h"
 
 // Helper function to convert world position to screen using Source engine
 static bool WorldToScreen(const Vector& vWorld, ImVec2& vScreen)
@@ -24,9 +25,9 @@ static void DrawText(ImDrawList* drawList, const ImVec2& pos, ImU32 color, const
 	ImVec2 drawPos = pos;
 	
 	if (centerX)
-		drawPos.x -= textSize.x / 2.0f;
+		drawPos.x -= textSize.x * 0.5f;
 	if (centerY)
-		drawPos.y -= textSize.y / 2.0f;
+		drawPos.y -= textSize.y * 0.5f;
 
 	// Draw text outline (black)
 	drawList->AddText(ImVec2(drawPos.x - 1, drawPos.y), IM_COL32(0, 0, 0, 255), text);
@@ -42,10 +43,10 @@ void CFeatures_ESP::Render()
 {
 	static bool s_bIgnoreTeam = false;
 
-	if (I::EngineVGui->IsGameUIVisible() || !I::EngineClient->IsInGame())
+	if (!Vars::ESP::Enabled)
 		return;
 
-	if (!Vars::ESP::Enabled)
+	if (I::EngineVGui->IsGameUIVisible() || !I::EngineClient->IsInGame())
 		return;
 
 	// Get ImGui draw list
@@ -163,16 +164,49 @@ void CFeatures_ESP::Render()
 				{
 					const int nModelIndex = pEntity->m_nModelIndex();
 
-					if (Vars::ESP::Ammo && IsAmmo(nModelIndex) && WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+					if (Vars::ESP::Ammo)
 					{
-						DrawText(drawList, screenPos, IM_COL32(150, 150, 150, 255), "ammo", true, true);
-						break;
+						const auto& Model = pEntity->GetModel();
+						if (!Model) continue;
+
+						const char* szModelName = I::ModelInfoClient->GetModelName(Model);
+						if (!szModelName) continue;
+
+						switch (FNV1A::Hash(szModelName))
+						{
+						case FNV1A::HashConst("models/items/ammopack_medium.mdl"):
+						case FNV1A::HashConst("models/items/ammopack_small.mdl"):
+						case FNV1A::HashConst("models/items/ammopack_large.mdl"):
+							if (WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+							{
+								DrawText(drawList, screenPos, IM_COL32(150, 150, 150, 255), "ammo", true, true);
+								break;
+							}
+							break;
+						}
 					}
 
-					if (Vars::ESP::Health && IsHealth(nModelIndex) && WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+					if (Vars::ESP::Health)
 					{
-						DrawText(drawList, screenPos, IM_COL32(0, 255, 0, 255), "health", true, true);
-						break;
+						const auto& Model = pEntity->GetModel();
+						if (!Model) continue;
+
+						const char* szModelName = I::ModelInfoClient->GetModelName(Model);
+						if (!szModelName) continue;
+
+						switch (FNV1A::Hash(szModelName))
+						{
+						case FNV1A::HashConst("models/items/medkit_large.mdl"):
+						case FNV1A::HashConst("models/items/medkit_medium.mdl"):
+						case FNV1A::HashConst("models/items/medkit_small.mdl"):
+						case FNV1A::HashConst("models/items/medkit_overheal.mdl"):
+							if (WorldToScreen(pEntity->WorldSpaceCenter(), screenPos))
+							{
+								DrawText(drawList, screenPos, IM_COL32(0, 255, 0, 255), "health", true, true);
+								break;
+							}
+							break;
+						}
 					}
 
 					break;
@@ -199,7 +233,7 @@ void CFeatures_ESP::Render()
 
 		C_TFPlayer* pPlayer = pEntity->As<C_TFPlayer*>();
 
-		if (!pPlayer || pPlayer->deadflag())
+		if (pPlayer->deadflag())
 			continue;
 
 		if (s_bIgnoreTeam && pPlayer->InLocalTeam())
@@ -208,7 +242,7 @@ void CFeatures_ESP::Render()
 		const int nHealth = pPlayer->GetHealth();
 		const int nMaxHealth = pPlayer->GetMaxHealth();
 
-		if (!nHealth || !nMaxHealth || !GetDynamicBounds(pPlayer, x, y, w, h))
+		if (!GetDynamicBounds(pPlayer, x, y, w, h))
 			continue;
 
 		float r, g, b;
@@ -217,7 +251,7 @@ void CFeatures_ESP::Render()
 		const ImU32 boxColor = IM_COL32(static_cast<int>(r * 255.0f), static_cast<int>(g * 255.0f), static_cast<int>(b * 255.0f), 255);
 		
 		// Get health color
-		ImU32 healthColor;
+		ImU32 healthColor = IM_COL32(0, 255, 0, 255);
 		if (nHealth > nMaxHealth)
 			healthColor = IM_COL32(0, 128, 255, 255); // Blue for overheal
 		else if (nHealth < 25)
@@ -226,8 +260,6 @@ void CFeatures_ESP::Render()
 			healthColor = IM_COL32(255, 128, 0, 255); // Orange
 		else if (nHealth < 80)
 			healthColor = IM_COL32(255, 255, 0, 255); // Yellow
-		else
-			healthColor = IM_COL32(0, 255, 0, 255); // Green
 
 		// Draw box
 		if (Vars::ESP::PlayerBoxes)
@@ -252,7 +284,7 @@ void CFeatures_ESP::Render()
 		if (Vars::ESP::PlayerHealth)
 		{
 			char healthText[32];
-			sprintf_s(healthText, "%i", nHealth); // Show current health only
+			sprintf(healthText, "%i", nHealth); // Show current health only
 			DrawText(drawList, ImVec2((float)nDrawX, (float)nDrawY), healthColor, healthText);
 			nDrawY += 15;
 		}
@@ -309,7 +341,7 @@ void CFeatures_ESP::Render()
 		if (Vars::ESP::PlayerHealthBar)
 		{
 			const float flMaxHealth = static_cast<float>(nMaxHealth);
-			const float flHealth = U::Math.Clamp<float>(static_cast<float>(nHealth), 1.0f, flMaxHealth);
+			const float flHealth = std::clamp<float>(static_cast<float>(nHealth), 1.0f, flMaxHealth);
 
 			static const int nWidth = 2;
 			const int nHeight = h + 1;
@@ -333,21 +365,6 @@ void CFeatures_ESP::Render()
 
 void CFeatures_ESP::LevelInitPostEntity()
 {
-	m_vecAmmo.clear();
-	{
-		m_vecAmmo.push_back(I::ModelInfoClient->GetModelIndex("models/items/ammopack_large.mdl"));
-		m_vecAmmo.push_back(I::ModelInfoClient->GetModelIndex("models/items/ammopack_medium.mdl"));
-		m_vecAmmo.push_back(I::ModelInfoClient->GetModelIndex("models/items/ammopack_small.mdl"));
-	}
-
-	m_vecHealth.clear();
-	{
-		m_vecHealth.push_back(I::ModelInfoClient->GetModelIndex("models/items/medkit_large.mdl"));
-		m_vecHealth.push_back(I::ModelInfoClient->GetModelIndex("models/items/medkit_medium.mdl"));
-		m_vecHealth.push_back(I::ModelInfoClient->GetModelIndex("models/items/medkit_small.mdl"));
-		m_vecHealth.push_back(I::ModelInfoClient->GetModelIndex("models/items/medkit_overheal.mdl"));
-	}
-
 	m_mapPowerups.clear();
 	{
 		m_mapPowerups.emplace(I::ModelInfoClient->GetModelIndex("models/pickups/pickup_powerup_crit.mdl"), L"POWERUP_CRIT");
@@ -357,30 +374,6 @@ void CFeatures_ESP::LevelInitPostEntity()
 		m_mapPowerups.emplace(I::ModelInfoClient->GetModelIndex("models/pickups/pickup_powerup_haste.mdl"), L"POWERUP_HASTE");
 		m_mapPowerups.emplace(I::ModelInfoClient->GetModelIndex("models/pickups/pickup_powerup_megahealth.mdl"), L"POWERUP_MEGAHEALTH");
 	}
-}
-
-bool CFeatures_ESP::IsAmmo(const int nModelIndex)
-{
-	size_t n; const size_t nMax = m_vecAmmo.size();
-	for (n = 0; n < nMax; n++)
-	{
-		if (m_vecAmmo[n] == nModelIndex)
-			return true;
-	}
-
-	return false;
-}
-
-bool CFeatures_ESP::IsHealth(const int nModelIndex)
-{
-	size_t n; const size_t nMax = m_vecHealth.size();
-	for (n = 0; n < nMax; n++)
-	{
-		if (m_vecHealth[n] == nModelIndex)
-			return true;
-	}
-
-	return false;
 }
 
 bool CFeatures_ESP::GetDynamicBounds(C_BaseEntity* pEntity, int& x, int& y, int& w, int& h)

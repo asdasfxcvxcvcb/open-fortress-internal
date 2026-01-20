@@ -3,6 +3,7 @@
 #include "Helpers/Helpers.h"
 #include "Globals.h"
 #include "Interfaces/IClientMode.h"
+#include "../Util/Math/Math.h"
 
 namespace I { inline void* TFGameMovement = nullptr; }
 
@@ -19,5 +20,6 @@ namespace Util
 		const unsigned int nG = static_cast<unsigned int>(U::Math.Min((510 * nHP) / nMaxHealth, 200));
 
 		return { static_cast<byte>(nR), static_cast<byte>(nG), 0, 255 };
+
 	}
 }

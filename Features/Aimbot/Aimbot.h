@@ -15,7 +15,7 @@ struct AimbotTarget
 class CAimbot
 {
 private:
-	bool GetHitbox(C_TFPlayer* pEntity, Vector& vOut);
+	bool GetHitbox(C_TFPlayer* pLocal, C_TFPlayer* pEntity, Vector& vOut);
 	bool IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity);
 	AimbotTarget GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd);
 	void AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTarget);

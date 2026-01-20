@@ -36,4 +36,6 @@ void CUtil_Offsets::Initialize()
 	
 	// ThirdPersonSwitch function signature
 	GETPATT(m_dwC_TFPlayer_ThirdPersonSwitch, "client.dll", "55 8B EC 83 EC ? 53 8B D9 89 5D ? E8 ? ? ? ? 84 C0");
+
+	GETPATT(MoveHelper, "client.dll", " 8B 3D ? ? ? ? 8B 07 8B 70 ? 8B CE FF 15 ? ? ? ? 8B CF FF D6 F3 0F 10 05");
 }

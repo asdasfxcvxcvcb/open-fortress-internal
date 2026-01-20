@@ -16,7 +16,6 @@
     <ClCompile Include="Util\Pattern\Pattern.cpp" />
     <ClCompile Include="SDK\Includes\checksum_crc.cpp" />
     <ClCompile Include="SDK\Entities\NetVarManager\NetVarManager.cpp" />
-    <ClCompile Include="Util\Hash\Hash.cpp" />
     <ClCompile Include="Hooks\Hooks.cpp" />
     <ClCompile Include="SDK\Helpers\Helpers.cpp" />
     <ClCompile Include="SDK\Helpers\DrawManager\DrawManager.cpp" />
@@ -34,6 +33,22 @@
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_LevelInitPostEntity.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
     <ClCompile Include="Features\Config\Config.cpp" />
+    <ClCompile Include="Features\Aimbot\Aimbot.cpp" />
+    <ClCompile Include="Features\Menu\ImGuiMenu.cpp" />
+    <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
+    <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
+    <ClCompile Include="Hooks\Definitions\ClientModeShared_OverrideView.cpp" />
+    <ClCompile Include="Hooks\Definitions\DirectX9_EndScene.cpp" />
+    <ClCompile Include="Hooks\Definitions\DirectX9_Reset.cpp" />
+    <ClCompile Include="Hooks\Definitions\ISurface_LockCursor.cpp" />
+    <ClCompile Include="Util\DirectX\DirectX.cpp" />
+    <ClCompile Include="vendor\imgui\imgui.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_demo.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_draw.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_dx9.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_tables.cpp" />
+    <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util\Util.h" />
@@ -127,6 +142,18 @@
     <ClInclude Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.h" />
     <ClInclude Include="Features\Nospread\Nospread.h" />
     <ClInclude Include="Features\Config\Config.h" />
+    <ClInclude Include="Features\Aimbot\Aimbot.h" />
+    <ClInclude Include="Features\Menu\ImGuiMenu.h" />
+    <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
+    <ClInclude Include="Util\DirectX\DirectX.h" />
+    <ClInclude Include="vendor\imgui\imconfig.h" />
+    <ClInclude Include="vendor\imgui\imgui.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_dx9.h" />
+    <ClInclude Include="vendor\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="vendor\imgui\imgui_internal.h" />
+    <ClInclude Include="vendor\imgui\imstb_rectpack.h" />
+    <ClInclude Include="vendor\imgui\imstb_textedit.h" />
+    <ClInclude Include="vendor\imgui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SDK\Includes\gametrace.h" />

@@ -1,73 +1,43 @@
 #include "Aimbot.h"
 #include "../Vars.h"
 
-bool CAimbot::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
+bool CAimbot::GetHitbox(C_TFPlayer* pLocal, C_TFPlayer* pEntity, Vector& vOut)
 {
 	if (!pEntity)
 		return false;
 
-	matrix3x4_t BoneMatrix[128];
-	if (!pEntity->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
-		return false;
+	int nHitbox = 3;
 
-	int nHitbox = 0;
-
-	// Auto hitbox selection based on weapon
-	if (Vars::Aimbot::Hitbox == 2) // Auto mode
+	// Manual hitbox selection
+	switch (Vars::Aimbot::Hitbox)
 	{
-		// Get local player's weapon
-		auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
+	case 0: // Head
+		nHitbox = 0;
+		break;
+	case 1: // Body
+		nHitbox = 3;
+		break;
+	case 2:
 		if (pLocal)
 		{
-			C_TFPlayer* pLocalPlayer = reinterpret_cast<C_TFPlayer*>(pLocal);
-			C_BaseCombatWeapon* pWeapon = pLocalPlayer->GetActiveWeapon();
-			
+			C_BaseCombatWeapon* pWeapon = pLocal->GetActiveWeapon();
+
 			if (pWeapon)
 			{
 				// Cast to TF weapon to get weapon ID
 				C_TFWeaponBase* pTFWeapon = reinterpret_cast<C_TFWeaponBase*>(pWeapon);
 				int weaponID = pTFWeapon->GetWeaponID();
-				const char* weaponName = pWeapon->GetName();
-				
-				// Check weapon name for railgun or sniper rifle
-				bool isRailgun = (strstr(weaponName, "railgun") != nullptr || strstr(weaponName, "RAILGUN") != nullptr);
-				bool isSniper = (strstr(weaponName, "sniperrifle") != nullptr || strstr(weaponName, "SNIPERRIFLE") != nullptr);
-				
+
 				// Only aim for head with railgun and sniper rifle
-				if (isRailgun || isSniper || weaponID == TF_WEAPON_SNIPERRIFLE || weaponID == TF_WEAPON_RAILGUN)
-				{
+				if (weaponID == TF_WEAPON_SNIPERRIFLE || weaponID == TF_WEAPON_RAILGUN) {
 					nHitbox = 0; // Head for sniper weapons
 				}
-				else
-				{
-					nHitbox = 3; // Body for everything else
-				}
-			}
-			else
-			{
-				nHitbox = 3; // Default to body if no weapon
 			}
 		}
-		else
-		{
-			nHitbox = 3; // Default to body
-		}
-	}
-	else
-	{
-		// Manual hitbox selection
-		switch (Vars::Aimbot::Hitbox)
-		{
-		case 0: // Head
-			nHitbox = 0;
-			break;
-		case 1: // Body
-			nHitbox = 3;
-			break;
-		default:
-			nHitbox = 3;
-			break;
-		}
+		break;
+	default:
+		nHitbox = 3;
+		break;
 	}
 
 	const auto pModel = pEntity->GetModel();
@@ -84,6 +54,10 @@ bool CAimbot::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 
 	const auto pBox = pSet->pHitbox(nHitbox);
 	if (!pBox)
+		return false;
+
+	matrix3x4_t BoneMatrix[128];
+	if (!pEntity->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
 		return false;
 
 	Vector vMin, vMax;
@@ -175,63 +149,60 @@ AimbotTarget CAimbot::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 		totalPlayers++;
 		C_TFPlayer* pPlayer = reinterpret_cast<C_TFPlayer*>(pEntity);
-		
+
 		if (!IsValidTarget(pLocal, pPlayer))
 			continue;
 
 		validTargets++;
 
 		Vector vHitbox;
-		if (!GetHitbox(pPlayer, vHitbox))
+		if (!GetHitbox(pLocal, pPlayer, vHitbox))
 			continue;
 
 		// Check if preferred hitbox is visible
 		bool bPreferredVisible = IsVisible(pLocal, pPlayer, vHitbox);
 		Vector vPreferredHitbox = vHitbox;
-		
+
 		// If in auto mode, also check alternate hitbox
 		Vector vAlternateHitbox;
 		bool bAlternateVisible = false;
-		
+
 		if (Vars::Aimbot::Hitbox == 2)
 		{
-			matrix3x4_t BoneMatrix[128];
-			if (pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
+			const auto pModel = pPlayer->GetModel();
+			if (pModel)
 			{
-				const auto pModel = pPlayer->GetModel();
-				if (pModel)
+				const auto pHdr = I::ModelInfoClient->GetStudiomodel(pModel);
+				if (pHdr)
 				{
-					const auto pHdr = I::ModelInfoClient->GetStudiomodel(pModel);
-					if (pHdr)
+					const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
+					if (pSet)
 					{
-						const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
-						if (pSet)
+						// Determine alternate hitbox
+						int nAlternateHitbox = 0;
+
+						auto pWeapon = pLocal->GetActiveWeapon();
+						if (pWeapon)
 						{
-							// Determine alternate hitbox
-							int nAlternateHitbox = 3;
-							
-							auto pWeapon = pLocal->GetActiveWeapon();
-							if (pWeapon)
-							{
-								const char* weaponName = pWeapon->GetName();
-								bool isRailgun = (strstr(weaponName, "railgun") != nullptr || strstr(weaponName, "RAILGUN") != nullptr);
-								bool isSniper = (strstr(weaponName, "sniperrifle") != nullptr || strstr(weaponName, "SNIPERRIFLE") != nullptr);
-								
-								// If weapon prefers head, alternate is body. If weapon prefers body, alternate is head
-								if (isRailgun || isSniper)
-									nAlternateHitbox = 3; // Preferred head, alternate body
-								else
-									nAlternateHitbox = 0; // Preferred body, alternate head
+							C_TFWeaponBase* pTFWeapon = reinterpret_cast<C_TFWeaponBase*>(pWeapon);
+							int weaponID = pTFWeapon->GetWeaponID();
+
+							// Only aim for head with railgun and sniper rifle
+							if (weaponID == TF_WEAPON_SNIPERRIFLE || weaponID == TF_WEAPON_RAILGUN) {
+								nAlternateHitbox = 3; // Preferred head, alternate body
 							}
-							
-							const auto pBox = pSet->pHitbox(nAlternateHitbox);
-							if (pBox)
+						}
+
+						const auto pBox = pSet->pHitbox(nAlternateHitbox);
+						if (pBox)
+						{
+							matrix3x4_t BoneMatrix[128];
+							if (pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
 							{
 								Vector vMin, vMax;
 								U::Math.VectorTransform(pBox->bbmin, BoneMatrix[pBox->bone], vMin);
 								U::Math.VectorTransform(pBox->bbmax, BoneMatrix[pBox->bone], vMax);
 								vAlternateHitbox = (vMin + vMax) * 0.5f;
-								
 								bAlternateVisible = IsVisible(pLocal, pPlayer, vAlternateHitbox);
 							}
 						}
@@ -239,46 +210,39 @@ AimbotTarget CAimbot::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 				}
 			}
 		}
-		
+
 		// Decide which hitbox to use: ALWAYS prefer the weapon's optimal hitbox if visible
 		Vector vFinalHitbox;
-		bool bHasValidHitbox = false;
-		
+
 		if (bPreferredVisible)
 		{
 			// Preferred hitbox is visible - use it!
 			vFinalHitbox = vPreferredHitbox;
-			bHasValidHitbox = true;
 		}
 		else if (bAlternateVisible)
 		{
 			// Only use alternate if preferred is not visible
 			vFinalHitbox = vAlternateHitbox;
-			bHasValidHitbox = true;
 		}
-		
-		if (!bHasValidHitbox)
+
+		if (!(bPreferredVisible || bAlternateVisible))
 			continue;
 
 		const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
 		const float flDistance = vLocalPos.DistTo(vFinalHitbox);
-
-		// Check FOV
-		if (flFOV > Vars::Aimbot::FOV)
-			continue;
 
 		bool bBetter = false;
 
 		switch (Vars::Aimbot::TargetSelection)
 		{
 		case 0: // Distance
-			bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
+			bBetter = (flDistance < bestTarget.flDistance);
 			break;
 		case 1: // FOV
-			bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
+			bBetter = (flFOV < bestTarget.flFOV);
 			break;
 		case 2: // Health
-			bBetter = (bestTarget.pEntity == nullptr || pPlayer->m_iHealth() < bestTarget.pEntity->m_iHealth());
+			bBetter = (pPlayer->m_iHealth() < bestTarget.pEntity->m_iHealth());
 			break;
 		}
 
@@ -318,7 +282,7 @@ void CAimbot::AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTarget)
 
 	case 2: // Silent (PSilent)
 		pCmd->viewangles = vAngle;
-		G::bPSilentAngles = true; // Enable perfect silent aim
+		G::bPSilentAngles = true; // movement fix
 		break;
 	}
 
@@ -336,57 +300,24 @@ void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 	if (!pLocal || !pLocal->IsAlive())
 		return;
 
-	// Check aimbot key
-	bool bKeyPressed = false;
-	if (Vars::Aimbot::AimbotKey == 0)
-	{
-		// Always on
-		bKeyPressed = true;
-	}
-	else if (Vars::Aimbot::AimbotKey == VK_LBUTTON)
-	{
-		// Left mouse button (attack) - check both cmd buttons and GetAsyncKeyState
-		bKeyPressed = (pCmd->buttons & IN_ATTACK) || (GetAsyncKeyState(VK_LBUTTON) & 0x8000);
-	}
-	else if (Vars::Aimbot::AimbotKey == VK_RBUTTON)
-	{
-		// Right mouse button (attack2) - check both cmd buttons and GetAsyncKeyState
-		bKeyPressed = (pCmd->buttons & IN_ATTACK2) || (GetAsyncKeyState(VK_RBUTTON) & 0x8000);
-	}
-	else if (Vars::Aimbot::AimbotKey == VK_MBUTTON)
-	{
-		// Middle mouse button
-		bKeyPressed = (GetAsyncKeyState(VK_MBUTTON) & 0x8000);
-	}
-	else if (Vars::Aimbot::AimbotKey == VK_XBUTTON1 || Vars::Aimbot::AimbotKey == VK_XBUTTON2)
-	{
-		// Mouse side buttons
-		bKeyPressed = (GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000);
-	}
-	else
-	{
-		// Any other key
-		bKeyPressed = (GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000);
-	}
-
-	if (!bKeyPressed)
+	if (Vars::Aimbot::AimbotKey && !(GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000))
 		return;
 
 	auto target = GetBestTarget(pLocal, pCmd);
-	
+
 	if (!target.pEntity)
 		return;
 
 	// We have a valid target - set active state
 	G::bAimbotActive = true;
 
-	AimAt(pLocal, pCmd, target.vPos);
-
 	// Auto shoot if enabled
 	if (Vars::Aimbot::AutoShoot)
 	{
 		pCmd->buttons |= IN_ATTACK;
 	}
+
+	AimAt(pLocal, pCmd, target.vPos);
 }
 
 void CAimbot::DrawFOV()
@@ -395,8 +326,8 @@ void CAimbot::DrawFOV()
 		return;
 
 	// Get screen center
-	int centerX = H::Draw.m_nScreenW / 2;
-	int centerY = H::Draw.m_nScreenH / 2;
+	int centerX = H::Draw.m_nScreenW * 0.5f;
+	int centerY = H::Draw.m_nScreenH * 0.5f;
 
 	// Calculate radius based on FOV
 	// This is an approximation - FOV to pixels conversion
