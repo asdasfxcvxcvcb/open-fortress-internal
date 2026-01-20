@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
-using FNV1A_t = std::uint64_t;
+using FNV1A_t = std::uint32_t;
 
 namespace FNV1A {
-	inline constexpr std::uint64_t ullBasis = 0xCBF29CE484222325;
-	inline constexpr std::uint64_t ullPrime = 0x100000001B3;
+	inline constexpr std::uint32_t ullBasis = 0x811C9DC5;
+	inline constexpr std::uint32_t ullPrime = 0x1000193;
 
 	// compile-time hashes
 	constexpr FNV1A_t HashConst(const char* szString, const FNV1A_t uValue = ullBasis) noexcept {
