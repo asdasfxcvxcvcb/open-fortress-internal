@@ -27,9 +27,9 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 
 	/*I::Prediction->Update(
 		I::ClientState->m_nDeltaTick,
-		g_Interfaces.ClientState->m_nDeltaTick > 0,
-		g_Interfaces.ClientState->last_command_ack(),
-		g_Interfaces.ClientState->lastoutgoingcommand() + chocked
+		I::ClientState->m_nDeltaTick > 0,
+		I::ClientState->last_command_ack(),
+		I::ClientState->lastoutgoingcommand() + chocked
 	);*/
 
 	// Cache original angles BEFORE any modifications
