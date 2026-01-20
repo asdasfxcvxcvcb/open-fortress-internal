@@ -10,6 +10,5 @@
 <div align="center">
   <sub>this is necromancer for open fortess.</sub><br>
   <sub>All issues and bugs should be reported in the Discord server.</sub><br>
-  <sub><b>Using the loader is recommended for simple injection and always downloading the latest version of Necromancer.</b></sub>
-</div>
+
 
