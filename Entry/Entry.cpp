@@ -50,39 +50,19 @@ void CGlobal_Entry::Load()
 
 void CGlobal_Entry::Unload()
 {
-	try
-	{
-		if (I::Cvar)
-			I::Cvar->ConsoleColorPrintf({ 255, 150, 0, 255 }, "[Necromancer] Unloading...\n");
-	}
-	catch (...) {}
+	if (I::Cvar)
+		I::Cvar->ConsoleColorPrintf({ 255, 150, 0, 255 }, "[Necromancer] Unloading...\n");
 
-	try
-	{
-		F::ImGuiMenu.Shutdown();
-	}
-	catch (...) {}
+	F::ImGuiMenu.Shutdown();
 
 	Sleep(100);
 
-	try
-	{
-		MH_DisableHook(MH_ALL_HOOKS);
-	}
-	catch (...) {}
+	MH_DisableHook(MH_ALL_HOOKS);
 	
 	Sleep(100);
 	
-	try
-	{
-		MH_Uninitialize();
-	}
-	catch (...) {}
+	MH_Uninitialize();
 	
-	try
-	{
-		if (I::Cvar)
-			I::Cvar->ConsoleColorPrintf({ 15, 150, 150, 255 }, "[Necromancer] Unloaded. enjoy being a retarded legit\n");
-	}
-	catch (...) {}
+	if (I::Cvar)
+		I::Cvar->ConsoleColorPrintf({ 15, 150, 150, 255 }, "[Necromancer] Unloaded. enjoy being a retarded legit\n");
 }
