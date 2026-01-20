@@ -13,7 +13,7 @@ void CGlobal_Entry::Load()
 		I::ClientEntityList = U::Interface.Get<IClientEntityList*>("client.dll", "VClientEntityList003");
 		I::GameMovement = U::Interface.Get<IGameMovement*>("client.dll", "GameMovement001");
 		I::Prediction = U::Interface.Get<CPrediction*>("client.dll", "VClientPrediction001");
-		I::EngineClient = U::Interface.Get<IVEngineClient013*>("engine.dll", "VEngineClient013");
+		I::EngineClient = U::Interface.Get<IVEngineClient013*>("engine.dll", "VEngineClient014");
 		I::EngineVGui = U::Interface.Get<IEngineVGui*>("engine.dll", "VEngineVGui001");
 		I::RenderView = U::Interface.Get<IVRenderView*>("engine.dll", "VEngineRenderView014");
 		I::GameEventManager = U::Interface.Get<IGameEventManager2*>("engine.dll", "GAMEEVENTSMANAGER002");
@@ -51,6 +51,13 @@ void CGlobal_Entry::Load()
 		I::Cvar->ConsoleColorPrintf({ 15, 150, 150, 255 }, "[Necromancer] Loaded and bloated, haha JK, this open fartess cheat was made by blizzman\n");
 		I::Cvar->ConsoleColorPrintf({ 255, 255, 0, 255 }, "[Necromancer] Press INSERT to open menu\n");
 	}
+
+	while (!GetAsyncKeyState(VK_F11) & 0x8000)
+	{
+		Sleep(100);
+	}
+	
+	Unload();
 }
 
 void CGlobal_Entry::Unload()
@@ -63,11 +70,11 @@ void CGlobal_Entry::Unload()
 	Sleep(100);
 
 	MH_DisableHook(MH_ALL_HOOKS);
-	
+
 	Sleep(100);
-	
+
 	MH_Uninitialize();
-	
+
 	if (I::Cvar)
 		I::Cvar->ConsoleColorPrintf({ 15, 150, 150, 255 }, "[Necromancer] Unloaded. enjoy being a retarded legit\n");
 }

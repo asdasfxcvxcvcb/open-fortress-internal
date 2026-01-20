@@ -8,28 +8,25 @@ namespace Hooks
 {
 	namespace DirectX9_EndScene
 	{
-		namespace
+		EndScene_t Original = nullptr;
+
+		HRESULT __stdcall Detour(IDirect3DDevice9* pDevice)
 		{
-			EndScene_t Original = nullptr;
-			
-			HRESULT __stdcall Detour(IDirect3DDevice9* pDevice)
+			static bool bInit = false;
+			if (!bInit)
 			{
-				static bool bInit = false;
-				if (!bInit)
-				{
-					F::ImGuiMenu.Initialize(pDevice);
-					bInit = true;
-				}
-
-				F::ImGuiMenu.Render();
-
-				return Original(pDevice);
+				F::ImGuiMenu.Initialize(pDevice);
+				bInit = true;
 			}
-		}
 
-		void Initialize()
-		{
-			// We'll hook this from the vftable later
+			F::ImGuiMenu.Render();
+
+			return Original(pDevice);
 		}
+	}
+
+	void Initialize()
+	{
+		// We'll hook this from the vftable later
 	}
 }

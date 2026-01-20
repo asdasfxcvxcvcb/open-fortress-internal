@@ -8,22 +8,19 @@ namespace Hooks
 {
 	namespace DirectX9_Reset
 	{
-		namespace
-		{
-			Reset_t Original = nullptr;
-			
-			HRESULT __stdcall Detour(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters)
-			{
-				F::ImGuiMenu.OnDeviceLost();
-				HRESULT result = Original(pDevice, pPresentationParameters);
-				F::ImGuiMenu.OnDeviceReset();
-				return result;
-			}
-		}
+		Reset_t Original = nullptr;
 
-		void Initialize()
+		HRESULT __stdcall Detour(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters)
 		{
-			// We'll hook this from the vftable later
+			F::ImGuiMenu.OnDeviceLost();
+			HRESULT result = Original(pDevice, pPresentationParameters);
+			F::ImGuiMenu.OnDeviceReset();
+			return result;
 		}
+	}
+
+	void Initialize()
+	{
+		// We'll hook this from the vftable later
 	}
 }
