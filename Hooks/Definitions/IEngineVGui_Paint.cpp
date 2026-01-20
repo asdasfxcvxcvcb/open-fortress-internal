@@ -10,12 +10,12 @@ DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 {
 	Func.Original<FN>()(ecx, edx, mode);
 
-	// Lazy initialize DirectX hooks on first paint
+	// Lazy initialize DirectX hooks on first paint (when D3D device exists)
 	static bool bDirectXInitialized = false;
 	if (!bDirectXInitialized)
 	{
-		U::DirectX.Initialize();
-		bDirectXInitialized = true;
+		if (U::DirectX.Initialize())
+			bDirectXInitialized = true;
 	}
 
 	// Handle F11 key for unload
@@ -25,8 +25,6 @@ DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 		if (!bF11Pressed)
 		{
 			bF11Pressed = true;
-			
-			// Unload hooks and cleanup
 			G::Entry.Unload();
 			
 			// Get the module handle BEFORE creating the thread
@@ -36,7 +34,7 @@ DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 			
 			// Create a thread to free the library after a short delay
 			CreateThread(nullptr, 0, [](LPVOID lpParam) -> DWORD {
-				Sleep(100); // Give time for cleanup
+				Sleep(100);
 				FreeLibraryAndExitThread((HMODULE)lpParam, 0);
 				return 0;
 			}, hModule, 0, nullptr);
@@ -47,13 +45,11 @@ DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 		bF11Pressed = false;
 	}
 
-	// INSERT key is now handled by ImGui WndProc
-
 	if (mode & PAINT_UIPANELS)
 	{
 		I::MatSystemSurface->StartDrawing();
 		{
-			H::Draw.UpdateMatrix(); // Keep this to update screen dimensions
+			H::Draw.UpdateMatrix();
 		}
 		I::MatSystemSurface->FinishDrawing();
 	}

@@ -1,10 +1,11 @@
 #include "Config.h"
 #include "../Vars.h"
 #include "../../SDK/SDK.h"
+#include "../../vendor/nlohmann/json.hpp"
 #include <fstream>
-#include <sstream>
 #include <Windows.h>
-#include <ShlObj.h>
+
+using json = nlohmann::json;
 
 std::string CConfig::GetConfigPath(const std::string& configName)
 {
@@ -13,28 +14,21 @@ std::string CConfig::GetConfigPath(const std::string& configName)
 
 void CConfig::CreateDirectoryIfNotExists(const std::string& path)
 {
-	// Extract directory from full path
 	size_t lastSlash = path.find_last_of("\\/");
 	if (lastSlash != std::string::npos)
 	{
 		std::string dir = path.substr(0, lastSlash);
 		
-		// Create directory recursively
 		std::string currentPath;
-		std::istringstream ss(dir);
-		std::string token;
-		
-		while (std::getline(ss, token, '\\'))
+		size_t pos = 0;
+		while ((pos = dir.find('\\', pos)) != std::string::npos)
 		{
-			if (token.empty() || token.back() == ':')
-			{
-				currentPath += token + "\\";
-				continue;
-			}
-			
-			currentPath += token + "\\";
-			CreateDirectoryA(currentPath.c_str(), NULL);
+			currentPath = dir.substr(0, pos);
+			if (!currentPath.empty() && currentPath.back() != ':')
+				CreateDirectoryA(currentPath.c_str(), NULL);
+			pos++;
 		}
+		CreateDirectoryA(dir.c_str(), NULL);
 	}
 }
 
@@ -43,56 +37,57 @@ void CConfig::SaveConfig(const std::string& configName)
 	std::string path = GetConfigPath(configName);
 	CreateDirectoryIfNotExists(path);
 	
-	std::ofstream file(path);
-	if (!file.is_open())
-	{
-		if (I::Cvar)
-			I::Cvar->ConsoleColorPrintf({ 255, 0, 0, 255 }, "[Config] Failed to open file for writing: %s\n", path.c_str());
-		return;
-	}
-	
-	// Manual JSON writing (simple approach without external library)
-	file << "{\n";
+	json config;
 	
 	// Aimbot settings
-	file << "  \"Aimbot\": {\n";
-	file << "    \"Enabled\": " << (Vars::Aimbot::Enabled ? "true" : "false") << ",\n";
-	file << "    \"Mode\": " << Vars::Aimbot::Mode << ",\n";
-	file << "    \"SmoothAmount\": " << Vars::Aimbot::SmoothAmount << ",\n";
-	file << "    \"FOV\": " << Vars::Aimbot::FOV << ",\n";
-	file << "    \"TargetSelection\": " << Vars::Aimbot::TargetSelection << ",\n";
-	file << "    \"Hitbox\": " << Vars::Aimbot::Hitbox << ",\n";
-	file << "    \"IgnoreCloaked\": " << (Vars::Aimbot::IgnoreCloaked ? "true" : "false") << ",\n";
-	file << "    \"IgnoreInvulnerable\": " << (Vars::Aimbot::IgnoreInvulnerable ? "true" : "false") << ",\n";
-	file << "    \"AimbotKey\": " << Vars::Aimbot::AimbotKey << ",\n";
-	file << "    \"AutoShoot\": " << (Vars::Aimbot::AutoShoot ? "true" : "false") << ",\n";
-	file << "    \"DrawFOV\": " << (Vars::Aimbot::DrawFOV ? "true" : "false") << ",\n";
-	file << "    \"FFAMode\": " << (Vars::Aimbot::FFAMode ? "true" : "false") << "\n";
-	file << "  },\n";
+	config["Aimbot"]["Enabled"] = Vars::Aimbot::Enabled;
+	config["Aimbot"]["Mode"] = Vars::Aimbot::Mode;
+	config["Aimbot"]["SmoothAmount"] = Vars::Aimbot::SmoothAmount;
+	config["Aimbot"]["FOV"] = Vars::Aimbot::FOV;
+	config["Aimbot"]["TargetSelection"] = Vars::Aimbot::TargetSelection;
+	config["Aimbot"]["Hitbox"] = Vars::Aimbot::Hitbox;
+	config["Aimbot"]["IgnoreCloaked"] = Vars::Aimbot::IgnoreCloaked;
+	config["Aimbot"]["IgnoreInvulnerable"] = Vars::Aimbot::IgnoreInvulnerable;
+	config["Aimbot"]["AimbotKey"] = Vars::Aimbot::AimbotKey;
+	config["Aimbot"]["AutoShoot"] = Vars::Aimbot::AutoShoot;
+	config["Aimbot"]["DrawFOV"] = Vars::Aimbot::DrawFOV;
+	config["Aimbot"]["FFAMode"] = Vars::Aimbot::FFAMode;
+	config["Aimbot"]["IgnoreFriends"] = Vars::Aimbot::IgnoreFriends;
 	
 	// ESP settings
-	file << "  \"ESP\": {\n";
-	file << "    \"Enabled\": " << (Vars::ESP::Enabled ? "true" : "false") << ",\n";
-	file << "    \"Players\": " << (Vars::ESP::Players ? "true" : "false") << ",\n";
-	file << "    \"PlayerBoxes\": " << (Vars::ESP::PlayerBoxes ? "true" : "false") << ",\n";
-	file << "    \"PlayerNames\": " << (Vars::ESP::PlayerNames ? "true" : "false") << ",\n";
-	file << "    \"PlayerHealth\": " << (Vars::ESP::PlayerHealth ? "true" : "false") << ",\n";
-	file << "    \"PlayerHealthBar\": " << (Vars::ESP::PlayerHealthBar ? "true" : "false") << ",\n";
-	file << "    \"PlayerWeapons\": " << (Vars::ESP::PlayerWeapons ? "true" : "false") << ",\n";
-	file << "    \"PlayerConditions\": " << (Vars::ESP::PlayerConditions ? "true" : "false") << ",\n";
-	file << "    \"Items\": " << (Vars::ESP::Items ? "true" : "false") << ",\n";
-	file << "    \"Ammo\": " << (Vars::ESP::Ammo ? "true" : "false") << ",\n";
-	file << "    \"Health\": " << (Vars::ESP::Health ? "true" : "false") << ",\n";
-	file << "    \"Weapons\": " << (Vars::ESP::Weapons ? "true" : "false") << ",\n";
-	file << "    \"Powerups\": " << (Vars::ESP::Powerups ? "true" : "false") << "\n";
-	file << "  }\n";
+	config["ESP"]["Enabled"] = Vars::ESP::Enabled;
+	config["ESP"]["Players"] = Vars::ESP::Players;
+	config["ESP"]["PlayerBoxes"] = Vars::ESP::PlayerBoxes;
+	config["ESP"]["PlayerNames"] = Vars::ESP::PlayerNames;
+	config["ESP"]["PlayerHealth"] = Vars::ESP::PlayerHealth;
+	config["ESP"]["PlayerHealthBar"] = Vars::ESP::PlayerHealthBar;
+	config["ESP"]["PlayerWeapons"] = Vars::ESP::PlayerWeapons;
+	config["ESP"]["PlayerConditions"] = Vars::ESP::PlayerConditions;
+	config["ESP"]["Items"] = Vars::ESP::Items;
+	config["ESP"]["Ammo"] = Vars::ESP::Ammo;
+	config["ESP"]["Health"] = Vars::ESP::Health;
+	config["ESP"]["Weapons"] = Vars::ESP::Weapons;
+	config["ESP"]["Powerups"] = Vars::ESP::Powerups;
 	
-	file << "}\n";
+	// Misc settings
+	config["Misc"]["Thirdperson"] = Vars::Misc::Thirdperson;
+	config["Misc"]["ThirdpersonRight"] = Vars::Misc::ThirdpersonRight;
+	config["Misc"]["ThirdpersonUp"] = Vars::Misc::ThirdpersonUp;
+	config["Misc"]["ThirdpersonBack"] = Vars::Misc::ThirdpersonBack;
 	
-	file.close();
-	
-	if (I::Cvar)
-		I::Cvar->ConsoleColorPrintf({ 0, 255, 0, 255 }, "[Config] Saved successfully to: %s\n", path.c_str());
+	std::ofstream file(path);
+	if (file.is_open())
+	{
+		file << config.dump(4); // Pretty print with 4 space indent
+		file.close();
+		
+		if (I::Cvar)
+			I::Cvar->ConsoleColorPrintf({ 0, 255, 0, 255 }, "[Config] Saved to: %s\n", path.c_str());
+	}
+	else if (I::Cvar)
+	{
+		I::Cvar->ConsoleColorPrintf({ 255, 0, 0, 255 }, "[Config] Failed to save: %s\n", path.c_str());
+	}
 }
 
 void CConfig::LoadConfig(const std::string& configName)
@@ -101,74 +96,68 @@ void CConfig::LoadConfig(const std::string& configName)
 	std::ifstream file(path);
 	
 	if (!file.is_open())
-		return; // Silently skip if no config exists
+		return;
 	
-	std::string line;
-	std::string currentSection;
-	
-	while (std::getline(file, line))
+	try
 	{
-		// Remove whitespace
-		line.erase(0, line.find_first_not_of(" \t\r\n"));
-		line.erase(line.find_last_not_of(" \t\r\n,") + 1);
+		json config;
+		file >> config;
+		file.close();
 		
-		// Check for section
-		if (line.find("\"Aimbot\"") != std::string::npos)
-			currentSection = "Aimbot";
-		else if (line.find("\"ESP\"") != std::string::npos)
-			currentSection = "ESP";
-		
-		// Parse key-value pairs
-		size_t colonPos = line.find(':');
-		if (colonPos != std::string::npos)
+		// Aimbot settings
+		if (config.contains("Aimbot"))
 		{
-			std::string key = line.substr(0, colonPos);
-			std::string value = line.substr(colonPos + 1);
-			
-			// Clean up key and value
-			key.erase(0, key.find_first_not_of(" \t\""));
-			key.erase(key.find_last_not_of(" \t\"") + 1);
-			value.erase(0, value.find_first_not_of(" \t"));
-			value.erase(value.find_last_not_of(" \t,") + 1);
-			
-			// Aimbot settings
-			if (currentSection == "Aimbot")
-			{
-				if (key == "Enabled") Vars::Aimbot::Enabled = (value == "true");
-				else if (key == "Mode") Vars::Aimbot::Mode = std::stoi(value);
-				else if (key == "SmoothAmount") Vars::Aimbot::SmoothAmount = std::stof(value);
-				else if (key == "FOV") Vars::Aimbot::FOV = std::stof(value);
-				else if (key == "TargetSelection") Vars::Aimbot::TargetSelection = std::stoi(value);
-				else if (key == "Hitbox") Vars::Aimbot::Hitbox = std::stoi(value);
-				else if (key == "IgnoreCloaked") Vars::Aimbot::IgnoreCloaked = (value == "true");
-				else if (key == "IgnoreInvulnerable") Vars::Aimbot::IgnoreInvulnerable = (value == "true");
-				else if (key == "AimbotKey") Vars::Aimbot::AimbotKey = std::stoi(value);
-				else if (key == "AutoShoot") Vars::Aimbot::AutoShoot = (value == "true");
-				else if (key == "DrawFOV") Vars::Aimbot::DrawFOV = (value == "true");
-				else if (key == "FFAMode") Vars::Aimbot::FFAMode = (value == "true");
-			}
-			// ESP settings
-			else if (currentSection == "ESP")
-			{
-				if (key == "Enabled") Vars::ESP::Enabled = (value == "true");
-				else if (key == "Players") Vars::ESP::Players = (value == "true");
-				else if (key == "PlayerBoxes") Vars::ESP::PlayerBoxes = (value == "true");
-				else if (key == "PlayerNames") Vars::ESP::PlayerNames = (value == "true");
-				else if (key == "PlayerHealth") Vars::ESP::PlayerHealth = (value == "true");
-				else if (key == "PlayerHealthBar") Vars::ESP::PlayerHealthBar = (value == "true");
-				else if (key == "PlayerWeapons") Vars::ESP::PlayerWeapons = (value == "true");
-				else if (key == "PlayerConditions") Vars::ESP::PlayerConditions = (value == "true");
-				else if (key == "Items") Vars::ESP::Items = (value == "true");
-				else if (key == "Ammo") Vars::ESP::Ammo = (value == "true");
-				else if (key == "Health") Vars::ESP::Health = (value == "true");
-				else if (key == "Weapons") Vars::ESP::Weapons = (value == "true");
-				else if (key == "Powerups") Vars::ESP::Powerups = (value == "true");
-			}
+			auto& aimbot = config["Aimbot"];
+			if (aimbot.contains("Enabled")) Vars::Aimbot::Enabled = aimbot["Enabled"];
+			if (aimbot.contains("Mode")) Vars::Aimbot::Mode = aimbot["Mode"];
+			if (aimbot.contains("SmoothAmount")) Vars::Aimbot::SmoothAmount = aimbot["SmoothAmount"];
+			if (aimbot.contains("FOV")) Vars::Aimbot::FOV = aimbot["FOV"];
+			if (aimbot.contains("TargetSelection")) Vars::Aimbot::TargetSelection = aimbot["TargetSelection"];
+			if (aimbot.contains("Hitbox")) Vars::Aimbot::Hitbox = aimbot["Hitbox"];
+			if (aimbot.contains("IgnoreCloaked")) Vars::Aimbot::IgnoreCloaked = aimbot["IgnoreCloaked"];
+			if (aimbot.contains("IgnoreInvulnerable")) Vars::Aimbot::IgnoreInvulnerable = aimbot["IgnoreInvulnerable"];
+			if (aimbot.contains("AimbotKey")) Vars::Aimbot::AimbotKey = aimbot["AimbotKey"];
+			if (aimbot.contains("AutoShoot")) Vars::Aimbot::AutoShoot = aimbot["AutoShoot"];
+			if (aimbot.contains("DrawFOV")) Vars::Aimbot::DrawFOV = aimbot["DrawFOV"];
+			if (aimbot.contains("FFAMode")) Vars::Aimbot::FFAMode = aimbot["FFAMode"];
+			if (aimbot.contains("IgnoreFriends")) Vars::Aimbot::IgnoreFriends = aimbot["IgnoreFriends"];
 		}
+		
+		// ESP settings
+		if (config.contains("ESP"))
+		{
+			auto& esp = config["ESP"];
+			if (esp.contains("Enabled")) Vars::ESP::Enabled = esp["Enabled"];
+			if (esp.contains("Players")) Vars::ESP::Players = esp["Players"];
+			if (esp.contains("PlayerBoxes")) Vars::ESP::PlayerBoxes = esp["PlayerBoxes"];
+			if (esp.contains("PlayerNames")) Vars::ESP::PlayerNames = esp["PlayerNames"];
+			if (esp.contains("PlayerHealth")) Vars::ESP::PlayerHealth = esp["PlayerHealth"];
+			if (esp.contains("PlayerHealthBar")) Vars::ESP::PlayerHealthBar = esp["PlayerHealthBar"];
+			if (esp.contains("PlayerWeapons")) Vars::ESP::PlayerWeapons = esp["PlayerWeapons"];
+			if (esp.contains("PlayerConditions")) Vars::ESP::PlayerConditions = esp["PlayerConditions"];
+			if (esp.contains("Items")) Vars::ESP::Items = esp["Items"];
+			if (esp.contains("Ammo")) Vars::ESP::Ammo = esp["Ammo"];
+			if (esp.contains("Health")) Vars::ESP::Health = esp["Health"];
+			if (esp.contains("Weapons")) Vars::ESP::Weapons = esp["Weapons"];
+			if (esp.contains("Powerups")) Vars::ESP::Powerups = esp["Powerups"];
+		}
+		
+		// Misc settings
+		if (config.contains("Misc"))
+		{
+			auto& misc = config["Misc"];
+			if (misc.contains("Thirdperson")) Vars::Misc::Thirdperson = misc["Thirdperson"];
+			if (misc.contains("ThirdpersonRight")) Vars::Misc::ThirdpersonRight = misc["ThirdpersonRight"];
+			if (misc.contains("ThirdpersonUp")) Vars::Misc::ThirdpersonUp = misc["ThirdpersonUp"];
+			if (misc.contains("ThirdpersonBack")) Vars::Misc::ThirdpersonBack = misc["ThirdpersonBack"];
+		}
+		
+		if (I::Cvar)
+			I::Cvar->ConsoleColorPrintf({ 0, 255, 255, 255 }, "[Config] Loaded from: %s\n", path.c_str());
 	}
-	
-	file.close();
-	
-	if (I::Cvar)
-		I::Cvar->ConsoleColorPrintf({ 0, 255, 255, 255 }, "[Config] Loaded successfully from: %s\n", path.c_str());
+	catch (const std::exception& e)
+	{
+		if (I::Cvar)
+			I::Cvar->ConsoleColorPrintf({ 255, 0, 0, 255 }, "[Config] Parse error: %s\n", e.what());
+	}
 }

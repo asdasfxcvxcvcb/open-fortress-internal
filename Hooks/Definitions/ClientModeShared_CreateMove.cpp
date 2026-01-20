@@ -10,6 +10,15 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 	if (!cmd || !cmd->command_number)
 		return Func.Original<FN>()(ecx, edx, input_sample_frametime, cmd);
 
+	// Get SendPacket pointer - it's on the stack
+	bool* pSendPacket = nullptr;
+	__asm
+	{
+		mov eax, ebp
+		sub eax, 0x1C
+		mov pSendPacket, eax
+	}
+
 	// Reset per-frame state
 	G::bSilentAngles = false;
 	G::bPSilentAngles = false;
@@ -17,13 +26,9 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 	// Block mouse input when menu is open, but allow WASD movement
 	if (F::ImGuiMenu.IsOpen())
 	{
-		// Only block mouse movement and buttons, allow WASD
 		cmd->buttons = 0;
 		cmd->mousedx = 0;
 		cmd->mousedy = 0;
-		
-		// Don't modify forwardmove, sidemove, or upmove - allow movement
-		// Return false to prevent view angle changes
 		return false;
 	}
 
@@ -44,26 +49,45 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 	}
 	F::EnginePrediction.Finish();
 
-	// PSilent handling - restore view angles but keep cmd angles for server
-	if (G::bPSilentAngles)
+	// PSilent handling - choke packet, then send with restored angles next frame
+	if (pSendPacket)
 	{
-		// Fix movement to match the new angles
-		Vector vMove(cmd->forwardmove, cmd->sidemove, cmd->upmove);
-		Vector vAngleDiff = cmd->viewangles - vOldAngles;
+		static bool bWasSet = false;
 		
-		// Rotate movement vector
-		float flYaw = DEG2RAD(vAngleDiff.y);
-		float flCos = cosf(flYaw);
-		float flSin = sinf(flYaw);
-		
-		cmd->forwardmove = (vMove.x * flCos) - (vMove.y * flSin);
-		cmd->sidemove = (vMove.x * flSin) + (vMove.y * flCos);
-		
-		// Restore view angles so player doesn't see the snap
+		if (G::bPSilentAngles)
+		{
+			// Fix movement to match the new angles
+			Vector vMove(flOldForward, flOldSide, cmd->upmove);
+			Vector vAngleDiff = cmd->viewangles - vOldAngles;
+			
+			// Rotate movement vector
+			float flYaw = DEG2RAD(vAngleDiff.y);
+			float flCos = cosf(flYaw);
+			float flSin = sinf(flYaw);
+			
+			cmd->forwardmove = (vMove.x * flCos) - (vMove.y * flSin);
+			cmd->sidemove = (vMove.x * flSin) + (vMove.y * flCos);
+			
+			// Choke this packet - server gets the aim angles
+			*pSendPacket = false;
+			bWasSet = true;
+		}
+		else if (bWasSet)
+		{
+			// Next frame after psilent - send packet with restored angles
+			*pSendPacket = true;
+			cmd->viewangles = vOldAngles;
+			cmd->forwardmove = flOldForward;
+			cmd->sidemove = flOldSide;
+			bWasSet = false;
+		}
+	}
+
+	// Restore view angles for all silent aim modes
+	if (G::bSilentAngles || G::bPSilentAngles)
+	{
 		Vector vRestoreAngles = vOldAngles;
 		I::EngineClient->SetViewAngles(vRestoreAngles);
-		
-		return false; // Don't call original to prevent view update
 	}
 
 	return false;

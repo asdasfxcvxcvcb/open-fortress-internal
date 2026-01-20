@@ -10,12 +10,11 @@ bool CAimbot::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 	if (!pEntity->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
 		return false;
 
-	int nHitbox = 0;
+	int nHitbox = 3; // Default to body
 
 	// Auto hitbox selection based on weapon
 	if (Vars::Aimbot::Hitbox == 2) // Auto mode
 	{
-		// Get local player's weapon
 		auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
 		if (pLocal)
 		{
@@ -24,9 +23,6 @@ bool CAimbot::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 			
 			if (pWeapon)
 			{
-				// Cast to TF weapon to get weapon ID
-				C_TFWeaponBase* pTFWeapon = reinterpret_cast<C_TFWeaponBase*>(pWeapon);
-				int weaponID = pTFWeapon->GetWeaponID();
 				const char* weaponName = pWeapon->GetName();
 				
 				// Check weapon name for railgun or sniper rifle
@@ -34,40 +30,15 @@ bool CAimbot::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 				bool isSniper = (strstr(weaponName, "sniperrifle") != nullptr || strstr(weaponName, "SNIPERRIFLE") != nullptr);
 				
 				// Only aim for head with railgun and sniper rifle
-				if (isRailgun || isSniper || weaponID == TF_WEAPON_SNIPERRIFLE || weaponID == TF_WEAPON_RAILGUN)
-				{
+				if (isRailgun || isSniper)
 					nHitbox = 0; // Head for sniper weapons
-				}
-				else
-				{
-					nHitbox = 3; // Body for everything else
-				}
 			}
-			else
-			{
-				nHitbox = 3; // Default to body if no weapon
-			}
-		}
-		else
-		{
-			nHitbox = 3; // Default to body
 		}
 	}
 	else
 	{
-		// Manual hitbox selection
-		switch (Vars::Aimbot::Hitbox)
-		{
-		case 0: // Head
-			nHitbox = 0;
-			break;
-		case 1: // Body
-			nHitbox = 3;
-			break;
-		default:
-			nHitbox = 3;
-			break;
-		}
+		// Manual hitbox selection: 0 = Head, 1 = Body
+		nHitbox = (Vars::Aimbot::Hitbox == 0) ? 0 : 3;
 	}
 
 	const auto pModel = pEntity->GetModel();
@@ -263,22 +234,19 @@ AimbotTarget CAimbot::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 		const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
 		const float flDistance = vLocalPos.DistTo(vFinalHitbox);
 
-		// Check FOV
-		if (flFOV > Vars::Aimbot::FOV)
+		// Check FOV only if using FOV-based target selection
+		if (Vars::Aimbot::TargetSelection == 1 && flFOV > Vars::Aimbot::FOV)
 			continue;
 
 		bool bBetter = false;
 
 		switch (Vars::Aimbot::TargetSelection)
 		{
-		case 0: // Distance
+		case 0: // Distance - ignore FOV, just get closest
 			bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
 			break;
-		case 1: // FOV
+		case 1: // FOV - already checked above
 			bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
-			break;
-		case 2: // Health
-			bBetter = (bestTarget.pEntity == nullptr || pPlayer->m_iHealth() < bestTarget.pEntity->m_iHealth());
 			break;
 		}
 
@@ -310,7 +278,6 @@ void CAimbot::AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTarget)
 	{
 		Vector vDelta = vAngle - pCmd->viewangles;
 		U::Math.ClampAngles(vDelta);
-
 		pCmd->viewangles += vDelta / Vars::Aimbot::SmoothAmount;
 		I::EngineClient->SetViewAngles(pCmd->viewangles);
 		break;
@@ -318,7 +285,7 @@ void CAimbot::AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTarget)
 
 	case 2: // Silent (PSilent)
 		pCmd->viewangles = vAngle;
-		G::bPSilentAngles = true; // Enable perfect silent aim
+		G::bPSilentAngles = true;
 		break;
 	}
 
@@ -338,34 +305,21 @@ void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 	// Check aimbot key
 	bool bKeyPressed = false;
+	
 	if (Vars::Aimbot::AimbotKey == 0)
 	{
-		// Always on
-		bKeyPressed = true;
+		bKeyPressed = true; // Always on
 	}
 	else if (Vars::Aimbot::AimbotKey == VK_LBUTTON)
 	{
-		// Left mouse button (attack) - check both cmd buttons and GetAsyncKeyState
 		bKeyPressed = (pCmd->buttons & IN_ATTACK) || (GetAsyncKeyState(VK_LBUTTON) & 0x8000);
 	}
 	else if (Vars::Aimbot::AimbotKey == VK_RBUTTON)
 	{
-		// Right mouse button (attack2) - check both cmd buttons and GetAsyncKeyState
 		bKeyPressed = (pCmd->buttons & IN_ATTACK2) || (GetAsyncKeyState(VK_RBUTTON) & 0x8000);
-	}
-	else if (Vars::Aimbot::AimbotKey == VK_MBUTTON)
-	{
-		// Middle mouse button
-		bKeyPressed = (GetAsyncKeyState(VK_MBUTTON) & 0x8000);
-	}
-	else if (Vars::Aimbot::AimbotKey == VK_XBUTTON1 || Vars::Aimbot::AimbotKey == VK_XBUTTON2)
-	{
-		// Mouse side buttons
-		bKeyPressed = (GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000);
 	}
 	else
 	{
-		// Any other key
 		bKeyPressed = (GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000);
 	}
 
@@ -391,7 +345,8 @@ void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 void CAimbot::DrawFOV()
 {
-	if (!Vars::Aimbot::Enabled || !Vars::Aimbot::DrawFOV)
+	// Only draw FOV circle when using FOV-based target selection
+	if (!Vars::Aimbot::Enabled || !Vars::Aimbot::DrawFOV || Vars::Aimbot::TargetSelection != 1)
 		return;
 
 	// Get screen center
@@ -399,11 +354,10 @@ void CAimbot::DrawFOV()
 	int centerY = H::Draw.m_nScreenH / 2;
 
 	// Calculate radius based on FOV
-	// This is an approximation - FOV to pixels conversion
 	float fovRadians = (Vars::Aimbot::FOV * 3.14159f) / 180.0f;
 	int radius = static_cast<int>((H::Draw.m_nScreenH / 2.0f) * tanf(fovRadians / 2.0f));
 
 	// Draw the FOV circle
-	Color circleColor = Vars::Aimbot::Enabled ? Color(255, 255, 255, 100) : Color(100, 100, 100, 50);
+	Color circleColor = Color(255, 255, 255, 100);
 	H::Draw.OutlinedCircle(centerX, centerY, radius, 64, circleColor);
 }

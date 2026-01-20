@@ -25,7 +25,7 @@ LRESULT CALLBACK CImGuiMenu::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 	}
 
 	// Block all mouse messages when menu is open
-	if (g_pMenuInstance->m_bOpen)
+	if (g_pMenuInstance->m_bOpen.load())
 	{
 		// Handle mouse button binding BEFORE blocking
 		if (g_pMenuInstance->m_bAimbotKeyListening)
@@ -73,7 +73,7 @@ LRESULT CALLBACK CImGuiMenu::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
 	}
 
 	// Handle key binding for keyboard keys
-	if (uMsg == WM_KEYDOWN && g_pMenuInstance->m_bOpen)
+	if (uMsg == WM_KEYDOWN && g_pMenuInstance->m_bOpen.load())
 	{
 		if (g_pMenuInstance->m_bAimbotKeyListening)
 		{
@@ -149,9 +149,9 @@ bool CImGuiMenu::Initialize(IDirect3DDevice9* pDevice)
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.WindowRounding = 8.0f;
 	style.FrameRounding = 4.0f;
-	style.FrameBorderSize = 1.0f;
+	style.FrameBorderSize = 0.0f;
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
-	style.Colors[ImGuiCol_Border] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
 
 	// Setup backends
@@ -190,7 +190,7 @@ void CImGuiMenu::Shutdown()
 
 	// Mark as not initialized FIRST to stop rendering
 	m_bInitialized = false;
-	m_bOpen = false;
+	m_bOpen.store(false);
 
 	// Small delay to ensure no more render calls
 	Sleep(50);
@@ -234,14 +234,14 @@ void CImGuiMenu::OnDeviceReset()
 
 void CImGuiMenu::Toggle()
 {
-	m_bOpen = !m_bOpen;
+	bool expected = m_bOpen.load();
+	m_bOpen.store(!expected);
 	
-	// The ISurface_LockCursor hook will handle cursor visibility automatically
-	// Just update ImGui IO flags
+	// Update ImGui IO flags
 	ImGuiIO& io = ImGui::GetIO();
-	io.MouseDrawCursor = m_bOpen;
-	io.WantCaptureMouse = m_bOpen;
-	io.WantCaptureKeyboard = m_bOpen;
+	io.MouseDrawCursor = m_bOpen.load();
+	io.WantCaptureMouse = m_bOpen.load();
+	io.WantCaptureKeyboard = m_bOpen.load();
 }
 
 static const char* GetKeyNameImGui(int vk)
@@ -314,8 +314,8 @@ void CImGuiMenu::Render()
 			}
 		}
 		
-		// Draw FOV circle using ImGui DrawList (DirectX rendering)
-		if (bShouldDrawAimbotVisuals && Vars::Aimbot::Enabled && Vars::Aimbot::DrawFOV)
+		// Draw FOV circle using ImGui DrawList (DirectX rendering) - only for FOV-based targeting
+		if (bShouldDrawAimbotVisuals && Vars::Aimbot::Enabled && Vars::Aimbot::DrawFOV && Vars::Aimbot::TargetSelection == 1)
 		{
 			// Get screen dimensions
 			ImGuiIO& io = ImGui::GetIO();
@@ -327,7 +327,7 @@ void CImGuiMenu::Render()
 			float radius = (io.DisplaySize.y / 2.0f) * tanf(fovRadians / 2.0f);
 
 			// Draw the FOV circle with ImGui
-			ImU32 circleColor = Vars::Aimbot::Enabled ? IM_COL32(255, 255, 255, 100) : IM_COL32(100, 100, 100, 50);
+			ImU32 circleColor = IM_COL32(255, 255, 255, 100);
 			drawList->AddCircle(ImVec2(centerX, centerY), radius, circleColor, 64, 2.0f);
 		}
 
@@ -352,18 +352,16 @@ void CImGuiMenu::Render()
 	}
 
 	// Draw main menu if open
-	if (m_bOpen)
+	if (m_bOpen.load())
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.Colors[ImGuiCol_TitleBg] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
 		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
 
 		ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
-		ImGui::Begin("Necromancer", &m_bOpen, ImGuiWindowFlags_NoCollapse);
-
-		ImGui::Text("Necromancer | FPS: %.1f", ImGui::GetIO().Framerate);
-		ImGui::Text("Press INSERT to toggle this menu");
-		ImGui::Separator();
+		bool bOpen = m_bOpen.load();
+		ImGui::Begin("Necromancer", &bOpen, ImGuiWindowFlags_NoCollapse);
+		if (!bOpen) m_bOpen.store(false);
 
 		if (ImGui::BeginTabBar("MenuTabs"))
 		{
@@ -428,7 +426,7 @@ void CImGuiMenu::DrawAimbotTab()
 	ImGui::Separator();
 
 	// Target selection
-	const char* targets[] = { "Distance", "FOV", "Health" };
+	const char* targets[] = { "Distance", "FOV" };
 	ImGui::Combo("Target Selection", &Vars::Aimbot::TargetSelection, targets, IM_ARRAYSIZE(targets));
 
 	// Hitbox
@@ -507,8 +505,14 @@ void CImGuiMenu::DrawPlayersTab()
 	
 	ImGui::BeginChild("PlayerList", ImVec2(0, 0), true);
 	
+	int localPlayerIndex = I::EngineClient->GetLocalPlayer();
+	
 	for (int i = 1; i <= I::GlobalVarsBase->maxClients; i++)
 	{
+		// Skip local player
+		if (i == localPlayerIndex)
+			continue;
+			
 		auto pEntity = I::ClientEntityList->GetClientEntity(i);
 		if (!pEntity)
 			continue;
@@ -644,11 +648,38 @@ void CImGuiMenu::DrawKeybindWindow()
 
 	ImGui::Begin("Keybinds", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
 
-	// Aimbot status
-	bool aimbotActive = Vars::Aimbot::Enabled && (GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000);
+	// Aimbot status - three states
+	bool aimbotKeyPressed = Vars::Aimbot::Enabled && (Vars::Aimbot::AimbotKey == 0 || (GetAsyncKeyState(Vars::Aimbot::AimbotKey) & 0x8000));
+	bool aimbotTargeting = G::bAimbotActive;
+	
+	const char* statusText = nullptr;
+	ImVec4 statusColor;
+	
+	if (!Vars::Aimbot::Enabled || !aimbotKeyPressed)
+	{
+		// Inactive - nothing happening
+		statusText = "Inactive";
+		statusColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+	}
+	else if (aimbotKeyPressed && !aimbotTargeting)
+	{
+		// Idle - key pressed but not targeting anyone
+		statusText = "Idle";
+		statusColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+	else
+	{
+		// Active - currently shooting and targeting someone
+		statusText = "Active";
+		statusColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+	}
+	
 	ImGui::Text("Aimbot");
-	ImGui::SameLine(ImGui::GetWindowWidth() - 60);
-	ImGui::TextColored(aimbotActive ? ImVec4(0, 1, 0, 1) : ImVec4(1, 0, 0, 1), aimbotActive ? "Active" : "Inactive");
+	
+	// Calculate text width and align to right
+	float statusWidth = ImGui::CalcTextSize(statusText).x;
+	ImGui::SameLine(ImGui::GetWindowWidth() - statusWidth - ImGui::GetStyle().WindowPadding.x);
+	ImGui::TextColored(statusColor, statusText);
 
 	ImGui::End();
 

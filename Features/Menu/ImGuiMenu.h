@@ -2,12 +2,13 @@
 
 #include <d3d9.h>
 #include <Windows.h>
+#include <atomic>
 
 class CImGuiMenu
 {
 private:
 	bool m_bInitialized = false;
-	bool m_bOpen = false;
+	std::atomic<bool> m_bOpen = false;
 	int m_nTabIndex = 0;
 	
 	IDirect3DDevice9* m_pDevice = nullptr;

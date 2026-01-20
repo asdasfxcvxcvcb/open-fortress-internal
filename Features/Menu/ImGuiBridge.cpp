@@ -2,12 +2,12 @@
 #include <d3d9.h>
 #include <stdio.h>
 
-void ImGuiEndSceneHook(IDirect3DDevice9* pDevice)
+void ImGuiPresentHook(IDirect3DDevice9* pDevice)
 {
 	static bool bInit = false;
 	if (!bInit)
 	{
-		printf("[ImGuiBridge] EndScene called, initializing ImGui with device: %p\n", pDevice);
+		printf("[ImGuiBridge] Present called, initializing ImGui with device: %p\n", pDevice);
 		bool result = F::ImGuiMenu.Initialize(pDevice);
 		printf("[ImGuiBridge] ImGui initialization result: %d\n", result);
 		bInit = true;

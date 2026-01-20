@@ -235,6 +235,7 @@
     <ClInclude Include="SDK\Entities\IClientThinkable.h" />
     <ClInclude Include="SDK\Entities\IClientUnknown.h" />
     <ClInclude Include="SDK\Entities\NetVarManager\NetVarManager.h" />
+    <ClInclude Include="SDK\Globals.h" />
     <ClInclude Include="SDK\Helpers\DrawManager\DrawManager.h" />
     <ClInclude Include="SDK\Helpers\Helpers.h" />
     <ClInclude Include="SDK\Includes\AnalogCode.h" />
@@ -272,6 +273,7 @@
     <ClInclude Include="SDK\Interfaces\GameMovement.h" />
     <ClInclude Include="SDK\Interfaces\IBaseClientDll.h" />
     <ClInclude Include="SDK\Interfaces\IClientEntityList.h" />
+    <ClInclude Include="SDK\Interfaces\IClientMode.h" />
     <ClInclude Include="SDK\Interfaces\IEngineVGui.h" />
     <ClInclude Include="SDK\Interfaces\IGameEventManager.h" />
     <ClInclude Include="SDK\Interfaces\IInput.h" />

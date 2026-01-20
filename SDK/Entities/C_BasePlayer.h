@@ -40,14 +40,6 @@ public:
 	virtual float			GetDefaultAnimSpeed(void) = 0;
 	virtual void			ThirdPersonSwitch(void) = 0;
 
-	// Helper to call ThirdPersonSwitch via signature (vtable is broken)
-	inline void ThirdPersonSwitchSig()
-	{
-		if (U::Offsets.m_dwC_TFPlayer_ThirdPersonSwitch)
-		{
-			reinterpret_cast<void(__thiscall*)(void*)>(U::Offsets.m_dwC_TFPlayer_ThirdPersonSwitch)(this);
-		}
-	}
 	virtual bool			CanSetSoundMixer(void) = 0;
 	virtual int				GetVisionFilterFlags(bool bWeaponsCheck = false) = 0;
 	virtual void			CalculateVisionUsingCurrentFlags(void) = 0;

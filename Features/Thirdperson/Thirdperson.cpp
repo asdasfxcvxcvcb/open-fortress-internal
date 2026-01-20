@@ -11,34 +11,53 @@ void CThirdperson::Run(CViewSetup* pSetup)
 		return;
 
 	C_TFPlayer* pPlayer = reinterpret_cast<C_TFPlayer*>(pLocal);
-	if (!pPlayer || !pPlayer->IsAlive())
-		return;
+	
+	static bool bLastState = false;
 
-	// Toggle third person
+	// Force first person when dead
+	if (!pPlayer->IsAlive())
+	{
+		if (bLastState)
+		{
+			I::EngineClient->ClientCmd_Unrestricted("firstperson");
+			bLastState = false;
+		}
+		return;
+	}
+
+	// Set camera mode based on setting
 	if (Vars::Misc::Thirdperson)
 	{
-		I::Input->CAM_ToThirdPerson();
+		// Enable thirdperson if state changed
+		if (!bLastState)
+		{
+			I::EngineClient->ClientCmd_Unrestricted("thirdperson");
+			bLastState = true;
+		}
+		
+		// Apply camera offset
+		Vector vForward = {}, vRight = {}, vUp = {};
+		U::Math.AngleVectors(pSetup->angles, &vForward, &vRight, &vUp);
+
+		const Vector vOffset = (vForward * Vars::Misc::ThirdpersonBack)
+			- (vRight * Vars::Misc::ThirdpersonRight)
+			- (vUp * Vars::Misc::ThirdpersonUp);
+
+		const Vector vDesiredOrigin = pSetup->origin - vOffset;
+
+		trace_t trace;
+		CTraceFilterWorldOnly filter;
+		U::Trace.TraceRay(pSetup->origin, vDesiredOrigin, MASK_SOLID, &filter, &trace);
+
+		pSetup->origin -= vOffset * trace.fraction;
 	}
 	else
 	{
-		I::Input->CAM_ToFirstPerson();
-		return;
+		// Disable thirdperson if state changed
+		if (bLastState)
+		{
+			I::EngineClient->ClientCmd_Unrestricted("firstperson");
+			bLastState = false;
+		}
 	}
-
-	// Calculate camera offset
-	Vector vForward, vRight, vUp;
-	U::Math.AngleVectors(pSetup->angles, &vForward, &vRight, &vUp);
-
-	Vector vOffset = (vForward * Vars::Misc::ThirdpersonBack)
-		- (vRight * Vars::Misc::ThirdpersonRight)
-		- (vUp * Vars::Misc::ThirdpersonUp);
-
-	Vector vDesiredOrigin = pSetup->origin - vOffset;
-
-	// Trace to prevent camera going through walls
-	trace_t trace;
-	CTraceFilterWorldOnly filter;
-	U::Trace.TraceRay(pSetup->origin, vDesiredOrigin, MASK_SOLID, &filter, &trace);
-
-	pSetup->origin -= vOffset * trace.fraction;
 }

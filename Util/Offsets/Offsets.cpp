@@ -33,7 +33,4 @@ void CUtil_Offsets::Initialize()
 	
 	// OverrideView function signature (vtable index 12, not 16!)
 	GETPATT(m_dwClientModeShared_OverrideView, "client.dll", "55 8B EC 83 EC ? 57 E8 ? ? ? ? 8B F8 89 7D");
-	
-	// ThirdPersonSwitch function signature
-	GETPATT(m_dwC_TFPlayer_ThirdPersonSwitch, "client.dll", "55 8B EC 83 EC ? 53 8B D9 89 5D ? E8 ? ? ? ? 84 C0");
 }
