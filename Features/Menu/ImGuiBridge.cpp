@@ -1,4 +1,4 @@
-#include "ImGuiMenu.h"
+#include "Menu.h"
 #include <d3d9.h>
 #include <stdio.h>
 
@@ -8,15 +8,15 @@ void ImGuiPresentHook(IDirect3DDevice9* pDevice)
 	if (!bInit)
 	{
 		printf("[ImGuiBridge] Present called, initializing ImGui with device: %p\n", pDevice);
-		bool result = F::ImGuiMenu.Initialize(pDevice);
+		bool result = F::Menu.Initialize(pDevice);
 		printf("[ImGuiBridge] ImGui initialization result: %d\n", result);
 		bInit = true;
 	}
 
 	// Only render if initialized
-	if (F::ImGuiMenu.IsInitialized())
+	if (F::Menu.IsInitialized())
 	{
-		F::ImGuiMenu.Render();
+		F::Menu.Render();
 	}
 }
 
@@ -25,11 +25,11 @@ void ImGuiResetHook(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pParams, b
 	printf("[ImGuiBridge] Reset called, bBefore: %d\n", bBefore);
 	
 	// Only call hooks if initialized
-	if (F::ImGuiMenu.IsInitialized())
+	if (F::Menu.IsInitialized())
 	{
 		if (bBefore)
-			F::ImGuiMenu.OnDeviceLost();
+			F::Menu.OnDeviceLost();
 		else
-			F::ImGuiMenu.OnDeviceReset();
+			F::Menu.OnDeviceReset();
 	}
 }

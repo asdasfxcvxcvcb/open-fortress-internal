@@ -75,9 +75,15 @@ using DWORD = unsigned long;
 template <typename T>
 inline T DWordSwapAsm(T dw)
 {
+#ifdef _WIN64
+	// 64-bit: Use intrinsic
+	return _byteswap_ulong(static_cast<unsigned long>(dw));
+#else
+	// 32-bit: Use inline assembly
 	__asm
 	{
 		mov eax, dw
 		bswap eax
 	}
+#endif
 }

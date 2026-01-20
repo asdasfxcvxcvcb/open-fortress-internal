@@ -2,7 +2,7 @@
 
 #include "../../Entry/Entry.h"
 #include "../../Features/ESP/ESP.h"
-#include "../../Features/Menu/ImGuiMenu.h"
+#include "../../Features/Menu/Menu.h"
 #include "../../Features/Aimbot/Aimbot.h"
 #include "../../Util/DirectX/DirectX.h"
 

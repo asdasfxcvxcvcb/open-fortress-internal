@@ -16,5 +16,5 @@ namespace H { inline CHelpers_NetVarManager NetVar; }
 #define NETVAR(_name, type, table, name) inline type &_name() \
 { \
 	static const int nOffset = H::NetVar.Get(table, name); \
-	return *reinterpret_cast<type *>(reinterpret_cast<DWORD>(this) + nOffset); \
+	return *reinterpret_cast<type *>(reinterpret_cast<uintptr_t>(this) + nOffset); \
 }

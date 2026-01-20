@@ -1,5 +1,5 @@
 #include "../Hooks.h"
-#include "../../Features/Menu/ImGuiMenu.h"
+#include "../../Features/Menu/Menu.h"
 #include <d3d9.h>
 
 typedef HRESULT(__stdcall* Reset_t)(IDirect3DDevice9*, D3DPRESENT_PARAMETERS*);
@@ -14,9 +14,9 @@ namespace Hooks
 			
 			HRESULT __stdcall Detour(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters)
 			{
-				F::ImGuiMenu.OnDeviceLost();
+				F::Menu.OnDeviceLost();
 				HRESULT result = Original(pDevice, pPresentationParameters);
-				F::ImGuiMenu.OnDeviceReset();
+				F::Menu.OnDeviceReset();
 				return result;
 			}
 		}

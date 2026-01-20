@@ -1,5 +1,5 @@
 #include "Entry.h"
-#include "../Features/Menu/ImGuiMenu.h"
+#include "../Features/Menu/Menu.h"
 #include "../Features/Config/Config.h"
 
 void CGlobal_Entry::Load()
@@ -40,6 +40,7 @@ void CGlobal_Entry::Load()
 	H::Draw.Initialize();
 	G::Hooks.Initialize();
 	g_Config.LoadConfig();
+	g_Config.LoadPlayerList();
 	
 	if (I::Cvar)
 	{
@@ -54,7 +55,7 @@ void CGlobal_Entry::Unload()
 		I::Cvar->ConsoleColorPrintf({ 255, 150, 0, 255 }, "[Necromancer] Unloading...\n");
 
 	// Shutdown ImGui first
-	F::ImGuiMenu.Shutdown();
+	F::Menu.Shutdown();
 	Sleep(50);
 
 	// Disable all hooks

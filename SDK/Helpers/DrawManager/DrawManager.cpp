@@ -113,7 +113,7 @@ void CHelpers_DrawManager::String(const EFonts& font, int x, int y, const Color&
 	I::MatSystemSurface->DrawSetTextPos(x, y);
 	I::MatSystemSurface->DrawSetTextFont(fnt);
 	I::MatSystemSurface->DrawSetTextColor(clr);
-	I::MatSystemSurface->DrawPrintText(wstr, wcslen(wstr));
+	I::MatSystemSurface->DrawPrintText(wstr, static_cast<int>(wcslen(wstr)));
 }
 
 void CHelpers_DrawManager::String(const EFonts& font, int x, int y, const Color& clr, const short align, const wchar_t* const str, ...)
@@ -148,7 +148,7 @@ void CHelpers_DrawManager::String(const EFonts& font, int x, int y, const Color&
 	I::MatSystemSurface->DrawSetTextPos(x, y);
 	I::MatSystemSurface->DrawSetTextFont(fnt);
 	I::MatSystemSurface->DrawSetTextColor(clr);
-	I::MatSystemSurface->DrawPrintText(wstr, wcslen(wstr));
+	I::MatSystemSurface->DrawPrintText(wstr, static_cast<int>(wcslen(wstr)));
 }
 
 void CHelpers_DrawManager::Line(const int x, const int y, const int x1, const int y1, const Color& clr)

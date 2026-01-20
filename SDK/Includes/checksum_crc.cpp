@@ -1,5 +1,8 @@
 #include "checksum_crc.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4311 4302) // Disable pointer truncation warnings for 32-bit
+
 #define CRC32_INIT_VALUE 0xFFFFFFFFUL
 #define CRC32_XOR_VALUE  0xFFFFFFFFUL
 
@@ -167,3 +170,5 @@ JustAfew:
     nBuffer &= 7;
     goto JustAfew;
 }
+
+#pragma warning(pop)

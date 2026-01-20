@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>D:\Games\asd\asdsd\open_fortess\necormancer-openfortess\Release\necromancer.dll</FullPath>
+      <FullPath>D:\Games\asd\asdsd\open-fortress-internal\Release\necromancer.dll</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

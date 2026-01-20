@@ -96,7 +96,7 @@ public:
 public:
 	inline void SetCurrentCommand(CUserCmd* cmd) {
 		static const int s_nOff = (H::NetVar.Get("CBasePlayer", "m_hConstraintEntity") - 4);
-		*reinterpret_cast<CUserCmd**>(reinterpret_cast<DWORD>(this) + s_nOff) = cmd;
+		*reinterpret_cast<CUserCmd**>(reinterpret_cast<uintptr_t>(this) + s_nOff) = cmd;
 	}
 
 	inline void UpdateButtonState(const int nUserCmdButtonMask) {
@@ -108,7 +108,7 @@ public:
 	}
 
 	inline int& m_nImpulse() {
-		return *reinterpret_cast<int*>(this + 0x11DC); //Another hardcoded mf
+		return *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(this) + 0x11DC); //Another hardcoded mf
 	}
 
 	inline Vector GetShootPos() {

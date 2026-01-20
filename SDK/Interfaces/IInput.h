@@ -75,11 +75,11 @@ public:
 	
 public:
 	CUserCmd* m_pCommands() {
-		return *reinterpret_cast<CUserCmd**>(reinterpret_cast<DWORD>(this) + 0xC8);
+		return *reinterpret_cast<CUserCmd**>(reinterpret_cast<uintptr_t>(this) + 0xC8);
 	}
 
 	CVerifiedUserCmd* m_pVerifiedCommands() {
-		return *reinterpret_cast<CVerifiedUserCmd**>(reinterpret_cast<DWORD>(this) + (0xC8 + 0x4));
+		return *reinterpret_cast<CVerifiedUserCmd**>(reinterpret_cast<uintptr_t>(this) + (0xC8 + 0x4));
 	}
 };
 

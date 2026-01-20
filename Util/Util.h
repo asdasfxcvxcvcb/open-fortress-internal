@@ -11,10 +11,10 @@ namespace Util
 {
 	static std::wstring ConvertUtf8ToWide(const std::string& str)
 	{
-		int cnt = MultiByteToWideChar(CP_UTF8, 0, str.data(), str.length(), NULL, 0);
+		int cnt = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.length()), NULL, 0);
 
 		std::wstring s(cnt, 0);
-		MultiByteToWideChar(CP_UTF8, 0, str.data(), str.length(), &s[0], cnt);
+		MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.length()), &s[0], cnt);
 
 		return s;
 	}

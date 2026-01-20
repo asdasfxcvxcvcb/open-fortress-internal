@@ -29,7 +29,7 @@ public:
 
 		int n;
 		for (n = 0; n < 64; n++)
-			szName[n] = *reinterpret_cast<char*>(reinterpret_cast<DWORD>(this) + (s_nOff + n));
+			szName[n] = *reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(this) + (s_nOff + n));
 	}
 };
 

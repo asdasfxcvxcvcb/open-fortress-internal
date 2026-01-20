@@ -1,5 +1,5 @@
 #include "../Hooks.h"
-#include "../../Features/Menu/ImGuiMenu.h"
+#include "../../Features/Menu/Menu.h"
 #include <d3d9.h>
 
 typedef HRESULT(__stdcall* EndScene_t)(IDirect3DDevice9*);
@@ -17,11 +17,11 @@ namespace Hooks
 				static bool bInit = false;
 				if (!bInit)
 				{
-					F::ImGuiMenu.Initialize(pDevice);
+					F::Menu.Initialize(pDevice);
 					bInit = true;
 				}
 
-				F::ImGuiMenu.Render();
+				F::Menu.Render();
 
 				return Original(pDevice);
 			}

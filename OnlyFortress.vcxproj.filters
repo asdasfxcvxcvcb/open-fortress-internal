@@ -20,7 +20,6 @@
     <ClCompile Include="Hooks\Hooks.cpp" />
     <ClCompile Include="SDK\Helpers\Helpers.cpp" />
     <ClCompile Include="SDK\Helpers\DrawManager\DrawManager.cpp" />
-    <ClCompile Include="Features\Vars.cpp" />
     <ClCompile Include="Features\ESP\ESP.cpp" />
     <ClCompile Include="Hooks\Definitions\IEngineVGui_Paint.cpp" />
     <ClCompile Include="Entry\Entry.cpp" />

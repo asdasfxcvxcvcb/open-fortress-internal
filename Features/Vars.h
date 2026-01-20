@@ -2,6 +2,10 @@
 
 #include <Windows.h>
 #include <unordered_set>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include "../SDK/Includes/basetypes.h"
 
 namespace Vars
 {
@@ -15,7 +19,6 @@ namespace Vars
 		inline int Hitbox = 2; // 0 = Head, 1 = Body, 2 = Auto (weapon-based)
 		inline bool IgnoreCloaked = true;
 		inline bool IgnoreInvulnerable = true;
-		inline int AimbotKey = VK_XBUTTON2; // Mouse 5
 		inline bool AutoShoot = false;
 		inline bool DrawFOV = true;
 		inline bool FFAMode = true; // Free-for-all mode - ignores team check
@@ -48,5 +51,26 @@ namespace Vars
 	}
 	
 	// Custom friends list (Steam IDs)
-	inline std::unordered_set<uint64_t> CustomFriends;
+	inline std::unordered_set<uint32> CustomFriends;
+
+	// Bind system
+	struct BindConfig
+	{
+		std::string name;
+		int key = 0;
+		bool isToggle = false; // false = hold, true = toggle
+		bool isActive = false; // for toggle state
+		
+		// Stored settings for this bind
+		std::unordered_map<std::string, bool> boolSettings;
+		std::unordered_map<std::string, int> intSettings;
+		std::unordered_map<std::string, float> floatSettings;
+		
+		// Previous settings (what was there before bind activated)
+		std::unordered_map<std::string, bool> previousBoolSettings;
+		std::unordered_map<std::string, int> previousIntSettings;
+		std::unordered_map<std::string, float> previousFloatSettings;
+	};
+
+	inline std::vector<BindConfig> Binds;
 }
