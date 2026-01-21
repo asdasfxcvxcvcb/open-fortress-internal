@@ -18,6 +18,38 @@ LRESULT CALLBACK CMenu::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	if (!g_pMenuInstance)
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 
+	// Handle focus changes to reset input state
+	if (uMsg == WM_KILLFOCUS || uMsg == WM_ACTIVATE)
+	{
+		// Reset ImGui input state when losing focus
+		if (g_pMenuInstance->m_bInitialized)
+		{
+			ImGuiIO& io = ImGui::GetIO();
+			// Clear mouse button states
+			io.MouseDown[0] = false;
+			io.MouseDown[1] = false;
+			io.MouseDown[2] = false;
+			io.MouseDown[3] = false;
+			io.MouseDown[4] = false;
+		}
+		
+		// If menu was open and we're losing focus, close it
+		if (uMsg == WM_KILLFOCUS && g_pMenuInstance->m_bOpen.load())
+		{
+			g_pMenuInstance->m_bOpen.store(false);
+			if (g_pMenuInstance->m_bInitialized)
+			{
+				ImGuiIO& io = ImGui::GetIO();
+				io.MouseDrawCursor = false;
+				io.WantCaptureMouse = false;
+				io.WantCaptureKeyboard = false;
+			}
+		}
+		
+		// Always pass focus messages to the original handler
+		return CallWindowProc(g_pMenuInstance->m_pOriginalWndProc, hWnd, uMsg, wParam, lParam);
+	}
+
 	// Toggle menu with INSERT key (handle before anything else)
 	if (uMsg == WM_KEYDOWN && wParam == VK_INSERT)
 	{

@@ -28,6 +28,9 @@ public:
 	void Run(C_TFPlayer* pLocal, CUserCmd* pCmd);
 	void DrawFOV();
 	
+	// Shared target validation for all aimbot types
+	bool IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity);
+	
 	// Track if aimbot is currently aiming at a target
 	inline bool IsAiming() const { return m_bIsAiming; }
 	inline void SetAiming(bool bAiming) { m_bIsAiming = bAiming; }

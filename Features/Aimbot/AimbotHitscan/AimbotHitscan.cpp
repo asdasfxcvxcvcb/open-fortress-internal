@@ -77,51 +77,6 @@ bool CAimbotHitscan::IsVisible(C_TFPlayer* pLocal, C_TFPlayer* pEntity, const Ve
 	return (trace.m_pEnt == pEntity || trace.fraction > 0.99f);
 }
 
-bool CAimbotHitscan::IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity)
-{
-	if (!pEntity || pEntity == pLocal)
-		return false;
-
-	if (pEntity->deadflag())
-		return false;
-
-	if (pEntity->m_iHealth() <= 0)
-		return false;
-
-	if (Vars::Aimbot::IgnoreFriends)
-	{
-		player_info_t playerInfo;
-		if (I::EngineClient->GetPlayerInfo(pEntity->entindex(), &playerInfo))
-		{
-			if (Vars::CustomFriends.count(playerInfo.friendsID) > 0)
-				return false;
-		}
-	}
-
-	if (!Vars::Aimbot::FFAMode)
-	{
-		if (pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
-			return false;
-	}
-
-	if (pEntity->IsDormant())
-		return false;
-
-	if (Vars::Aimbot::IgnoreCloaked)
-	{
-		if (pEntity->InCond(4))
-			return false;
-	}
-
-	if (Vars::Aimbot::IgnoreInvulnerable)
-	{
-		if (pEntity->InCondUber() || pEntity->InCondShield())
-			return false;
-	}
-
-	return true;
-}
-
 AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 {
 	AimbotTarget bestTarget;
@@ -138,7 +93,7 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 		C_TFPlayer* pPlayer = reinterpret_cast<C_TFPlayer*>(pEntity);
 		
-		if (!IsValidTarget(pLocal, pPlayer))
+		if (!F::Aimbot.IsValidTarget(pLocal, pPlayer))
 			continue;
 
 		Vector vHitbox;

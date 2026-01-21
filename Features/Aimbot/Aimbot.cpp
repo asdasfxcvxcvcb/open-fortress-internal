@@ -91,6 +91,51 @@ EWeaponType CAimbot::GetWeaponType(C_BaseCombatWeapon* pWeapon)
 	return EWeaponType::UNKNOWN;
 }
 
+bool CAimbot::IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity)
+{
+	if (!pEntity || pEntity == pLocal)
+		return false;
+
+	if (pEntity->deadflag())
+		return false;
+
+	if (pEntity->m_iHealth() <= 0)
+		return false;
+
+	if (Vars::Aimbot::IgnoreFriends)
+	{
+		player_info_t playerInfo;
+		if (I::EngineClient->GetPlayerInfo(pEntity->entindex(), &playerInfo))
+		{
+			if (Vars::CustomFriends.count(playerInfo.friendsID) > 0)
+				return false;
+		}
+	}
+
+	if (!Vars::Aimbot::FFAMode)
+	{
+		if (pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
+			return false;
+	}
+
+	if (pEntity->IsDormant())
+		return false;
+
+	if (Vars::Aimbot::IgnoreCloaked)
+	{
+		if (pEntity->InCond(4))
+			return false;
+	}
+
+	if (Vars::Aimbot::IgnoreInvulnerable)
+	{
+		if (pEntity->InCondUber())
+			return false;
+	}
+
+	return true;
+}
+
 void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 {
 	SetAiming(false);
