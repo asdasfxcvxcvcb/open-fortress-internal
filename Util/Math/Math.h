@@ -2,6 +2,9 @@
 
 #include "Vector/Vector.h"
 
+// Forward declaration
+class CUserCmd;
+
 using matrix3x4_t = float[3][4];
 
 class VMatrix
@@ -35,12 +38,51 @@ public:
 	void ClampAngles(Vector& v);
 	void RotateTriangle(Vector2D* v, const float flRotation);
 	void AngleVectors(const Vector& angles, Vector* forward, Vector* right, Vector* up);
+	
+	// Matrix helpers for smooth ESP rendering
+	inline void MatrixSetColumn(const Vector& in, int column, matrix3x4_t& out)
+	{
+		out[0][column] = in.x;
+		out[1][column] = in.y;
+		out[2][column] = in.z;
+	}
+	
+	inline void AngleMatrix(const Vector& angles, matrix3x4_t& matrix)
+	{
+		float sr, sp, sy, cr, cp, cy;
+		
+		SinCos(angles.y * (3.14159265358979323846f / 180.0f), &sy, &cy);
+		SinCos(angles.x * (3.14159265358979323846f / 180.0f), &sp, &cp);
+		SinCos(angles.z * (3.14159265358979323846f / 180.0f), &sr, &cr);
+		
+		matrix[0][0] = cp * cy;
+		matrix[1][0] = cp * sy;
+		matrix[2][0] = -sp;
+		
+		float crcy = cr * cy;
+		float crsy = cr * sy;
+		float srcy = sr * cy;
+		float srsy = sr * sy;
+		
+		matrix[0][1] = sp * srcy - crsy;
+		matrix[1][1] = sp * srsy + crcy;
+		matrix[2][1] = sr * cp;
+		
+		matrix[0][2] = (sp * crcy + srsy);
+		matrix[1][2] = (sp * crsy - srcy);
+		matrix[2][2] = cr * cp;
+		
+		matrix[0][3] = 0.0f;
+		matrix[1][3] = 0.0f;
+		matrix[2][3] = 0.0f;
+	}
 
 	float GetFovBetween(const Vector vSrc, const Vector vDst);
 	float NormalizeAngle(const float ang);
 
 	Vector GetAngleToPosition(const Vector vFrom, const Vector vTo);
 	Vector VelocityToAngles(const Vector direction);
+	void FixMovement(CUserCmd* pCmd, const Vector& vOldAngles, const Vector& vNewAngles);
 
 public:
 	template<typename T>

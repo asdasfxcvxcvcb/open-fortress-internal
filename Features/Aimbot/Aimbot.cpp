@@ -93,17 +93,17 @@ EWeaponType CAimbot::GetWeaponType(C_BaseCombatWeapon* pWeapon)
 
 void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 {
+	SetAiming(false);
+	
 	if (!Vars::Aimbot::Enabled)
 		return;
 
 	if (!pLocal || !pLocal->IsAlive())
 		return;
 
-	// Get weapon and determine type
 	C_BaseCombatWeapon* pWeapon = pLocal->GetActiveWeapon();
 	EWeaponType weaponType = GetWeaponType(pWeapon);
 
-	// Delegate to appropriate aimbot
 	switch (weaponType)
 	{
 		case EWeaponType::HITSCAN:
@@ -120,26 +120,20 @@ void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 		case EWeaponType::UNKNOWN:
 		default:
-			// No aimbot for this weapon type
 			break;
 	}
 }
 
 void CAimbot::DrawFOV()
 {
-	// Only draw FOV circle when using FOV-based target selection
 	if (!Vars::Aimbot::Enabled || !Vars::Aimbot::DrawFOV || Vars::Aimbot::TargetSelection != 1)
 		return;
 
-	// Get screen center
 	int centerX = H::Draw.m_nScreenW / 2;
 	int centerY = H::Draw.m_nScreenH / 2;
 
-	// Calculate radius based on FOV
 	float fovRadians = (Vars::Aimbot::FOV * 3.14159f) / 180.0f;
 	int radius = static_cast<int>((H::Draw.m_nScreenH / 2.0f) * tanf(fovRadians / 2.0f));
 
-	// Draw the FOV circle
-	Color circleColor = Color(255, 255, 255, 100);
-	H::Draw.OutlinedCircle(centerX, centerY, radius, 64, circleColor);
+	H::Draw.OutlinedCircle(centerX, centerY, radius, 64, Color(255, 255, 255, 100));
 }

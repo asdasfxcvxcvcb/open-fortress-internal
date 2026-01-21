@@ -181,6 +181,13 @@ public:
 	NETVAR(m_flCloakMeter, float, "CTFPlayer", "m_flCloakMeter");
 	NETVAR(m_Hook, int, "CTFPlayer", "m_Hook");
 	NETVAR(m_pWeaponSpawner, int, "CTFPlayer", "m_pWeaponSpawner");
+	
+	// Invisibility helper - calculated from m_flInvisChangeCompleteTime offset
+	inline float& m_flInvisibility() {
+		static int nOffset = H::NetVar.Get("CTFPlayer", "m_flInvisChangeCompleteTime") - 8;
+		return *reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(this) + nOffset);
+	}
+	
 	NETVAR(m_bPlayerDominated, void*, "CTFPlayer", "m_bPlayerDominated");
 	NETVAR(m_bPlayerDominatingMe, void*, "CTFPlayer", "m_bPlayerDominatingMe");
 	NETVAR(m_flCondExpireTimeLeft, void*, "CTFPlayer", "m_flCondExpireTimeLeft");

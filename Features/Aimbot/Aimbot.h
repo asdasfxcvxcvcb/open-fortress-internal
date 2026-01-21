@@ -27,6 +27,13 @@ private:
 public:
 	void Run(C_TFPlayer* pLocal, CUserCmd* pCmd);
 	void DrawFOV();
+	
+	// Track if aimbot is currently aiming at a target
+	inline bool IsAiming() const { return m_bIsAiming; }
+	inline void SetAiming(bool bAiming) { m_bIsAiming = bAiming; }
+	
+private:
+	bool m_bIsAiming = false;
 };
 
 namespace F { inline CAimbot Aimbot; }

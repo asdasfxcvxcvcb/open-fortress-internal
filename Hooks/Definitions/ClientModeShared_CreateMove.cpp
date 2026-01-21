@@ -28,16 +28,16 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 	}
 #endif
 
-	// Reset per-frame state
 	G::bSilentAngles = false;
 	G::bPSilentAngles = false;
+	G::Attacking = 0;
+	G::bCanPrimaryAttack = false;
+	G::bCanSecondaryAttack = false;
+	G::bReloading = false;
 
-	// Block mouse input when menu is open, but allow WASD movement
-	// Also block ALL input when typing in text fields (ImGui WantCaptureKeyboard)
 	ImGuiIO& io = ImGui::GetIO();
 	if (F::Menu.IsOpen())
 	{
-		// If typing in a text field, block ALL input including movement
 		if (io.WantCaptureKeyboard)
 		{
 			cmd->buttons = 0;
@@ -49,14 +49,12 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 			return false;
 		}
 		
-		// Otherwise just block mouse/buttons but allow WASD
 		cmd->buttons = 0;
 		cmd->mousedx = 0;
 		cmd->mousedy = 0;
 		return false;
 	}
 
-	// Cache original angles BEFORE any modifications
 	const Vector vOldAngles = cmd->viewangles;
 	const float flOldForward = cmd->forwardmove;
 	const float flOldSide = cmd->sidemove;
@@ -66,27 +64,36 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 		return false;
 
 	C_TFPlayer* pLocal = reinterpret_cast<C_TFPlayer*>(pEntity);
+	C_BaseCombatWeapon* pWeapon = pLocal->GetActiveWeapon();
 
 	F::EnginePrediction.Start(cmd);
 	{
+		if (pWeapon)
+		{
+			float flServerTime = pLocal->m_nTickBase() * I::GlobalVarsBase->interval_per_tick;
+			float flTimeDiff = pWeapon->m_flNextPrimaryAttack() - flServerTime;
+			G::bCanPrimaryAttack = (flTimeDiff <= 0.5f);
+			G::bCanSecondaryAttack = (pWeapon->m_flNextSecondaryAttack() <= flServerTime);
+			
+			if (pWeapon->m_iClip1() <= 0 && pWeapon->GetMaxClip1() > 0)
+				G::bReloading = true;
+		}
+		
+		F::AutoStrafe.Run(pLocal, cmd);
 		F::Aimbot.Run(pLocal, cmd);
 		F::Chat.Run();
-		F::AutoStrafe.Run(pLocal, cmd);
 	}
 	F::EnginePrediction.Finish();
 
-	// PSilent handling - choke packet, then send with restored angles next frame
 	if (pSendPacket)
 	{
 		static bool bWasSet = false;
 		
 		if (G::bPSilentAngles)
 		{
-			// Fix movement to match the new angles
 			Vector vMove(flOldForward, flOldSide, cmd->upmove);
 			Vector vAngleDiff = cmd->viewangles - vOldAngles;
 			
-			// Rotate movement vector
 			float flYaw = DEG2RAD(vAngleDiff.y);
 			float flCos = cosf(flYaw);
 			float flSin = sinf(flYaw);
@@ -94,13 +101,11 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 			cmd->forwardmove = (vMove.x * flCos) - (vMove.y * flSin);
 			cmd->sidemove = (vMove.x * flSin) + (vMove.y * flCos);
 			
-			// Choke this packet - server gets the aim angles
 			*pSendPacket = false;
 			bWasSet = true;
 		}
 		else if (bWasSet)
 		{
-			// Next frame after psilent - send packet with restored angles
 			*pSendPacket = true;
 			cmd->viewangles = vOldAngles;
 			cmd->forwardmove = flOldForward;
@@ -109,7 +114,6 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 		}
 	}
 
-	// Restore view angles for all silent aim modes
 	if (G::bSilentAngles || G::bPSilentAngles)
 	{
 		Vector vRestoreAngles = vOldAngles;

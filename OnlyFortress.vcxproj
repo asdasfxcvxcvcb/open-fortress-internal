@@ -251,6 +251,7 @@
     <ClInclude Include="SDK\Entities\IClientUnknown.h" />
     <ClInclude Include="SDK\Entities\NetVarManager\NetVarManager.h" />
     <ClInclude Include="SDK\Globals.h" />
+    <ClInclude Include="SDK\Helpers.h" />
     <ClInclude Include="SDK\Helpers\DrawManager\DrawManager.h" />
     <ClInclude Include="SDK\Helpers\Helpers.h" />
     <ClInclude Include="SDK\Includes\AnalogCode.h" />

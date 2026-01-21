@@ -166,6 +166,7 @@
     <ClInclude Include="Features\Menu\Menu.h" />
     <ClInclude Include="Features\Chat\Chat.h" />
     <ClInclude Include="Features\AutoStrafe\AutoStrafe.h" />
+    <ClInclude Include="SDK\Helpers.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SDK\Includes\gametrace.h" />

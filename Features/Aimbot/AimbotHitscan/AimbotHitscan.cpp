@@ -1,5 +1,7 @@
 #include "AimbotHitscan.h"
+#include "../Aimbot.h"
 #include "../../Vars.h"
+#include "../../SDK/Helpers.h"
 
 bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 {
@@ -10,10 +12,9 @@ bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 	if (!pEntity->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
 		return false;
 
-	int nHitbox = 3; // Default to body
+	int nHitbox = 3;
 
-	// Auto hitbox selection based on weapon
-	if (Vars::Aimbot::Hitbox == 2) // Auto mode
+	if (Vars::Aimbot::Hitbox == 2)
 	{
 		auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
 		if (pLocal)
@@ -24,20 +25,16 @@ bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 			if (pWeapon)
 			{
 				const char* weaponName = pWeapon->GetName();
-				
-				// Check weapon name for railgun or sniper rifle
 				bool isRailgun = (strstr(weaponName, "railgun") != nullptr || strstr(weaponName, "RAILGUN") != nullptr);
 				bool isSniper = (strstr(weaponName, "sniperrifle") != nullptr || strstr(weaponName, "SNIPERRIFLE") != nullptr);
 				
-				// Only aim for head with railgun and sniper rifle
 				if (isRailgun || isSniper)
-					nHitbox = 0; // Head for sniper weapons
+					nHitbox = 0;
 			}
 		}
 	}
 	else
 	{
-		// Manual hitbox selection: 0 = Head, 1 = Body
 		nHitbox = (Vars::Aimbot::Hitbox == 0) ? 0 : 3;
 	}
 
@@ -89,7 +86,6 @@ bool CAimbotHitscan::IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity)
 	if (pEntity->m_iHealth() <= 0)
 		return false;
 
-	// Check if player is marked as friend
 	if (Vars::Aimbot::IgnoreFriends)
 	{
 		player_info_t playerInfo;
@@ -100,7 +96,6 @@ bool CAimbotHitscan::IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity)
 		}
 	}
 
-	// Team check - skip if FFA mode is enabled
 	if (!Vars::Aimbot::FFAMode)
 	{
 		if (pEntity->m_iTeamNum() == pLocal->m_iTeamNum())
@@ -110,14 +105,12 @@ bool CAimbotHitscan::IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity)
 	if (pEntity->IsDormant())
 		return false;
 
-	// Check cloaked
 	if (Vars::Aimbot::IgnoreCloaked)
 	{
-		if (pEntity->InCond(4)) // TF_COND_STEALTHED
+		if (pEntity->InCond(4))
 			return false;
 	}
 
-	// Check invulnerable
 	if (Vars::Aimbot::IgnoreInvulnerable)
 	{
 		if (pEntity->InCondUber() || pEntity->InCondShield())
@@ -150,11 +143,9 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 		if (!GetHitbox(pPlayer, vHitbox))
 			continue;
 
-		// Check if preferred hitbox is visible
 		bool bPreferredVisible = IsVisible(pLocal, pPlayer, vHitbox);
 		Vector vPreferredHitbox = vHitbox;
 		
-		// If in auto mode, also check alternate hitbox
 		Vector vAlternateHitbox;
 		bool bAlternateVisible = false;
 		
@@ -172,7 +163,6 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 						const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
 						if (pSet)
 						{
-							// Determine alternate hitbox
 							int nAlternateHitbox = 3;
 							
 							auto pWeapon = pLocal->GetActiveWeapon();
@@ -182,11 +172,10 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 								bool isRailgun = (strstr(weaponName, "railgun") != nullptr || strstr(weaponName, "RAILGUN") != nullptr);
 								bool isSniper = (strstr(weaponName, "sniperrifle") != nullptr || strstr(weaponName, "SNIPERRIFLE") != nullptr);
 								
-								// If weapon prefers head, alternate is body. If weapon prefers body, alternate is head
 								if (isRailgun || isSniper)
-									nAlternateHitbox = 3; // Preferred head, alternate body
+									nAlternateHitbox = 3;
 								else
-									nAlternateHitbox = 0; // Preferred body, alternate head
+									nAlternateHitbox = 0;
 							}
 							
 							const auto pBox = pSet->pHitbox(nAlternateHitbox);
@@ -205,7 +194,6 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 			}
 		}
 		
-		// Decide which hitbox to use
 		Vector vFinalHitbox;
 		bool bHasValidHitbox = false;
 		
@@ -226,7 +214,6 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 		const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
 		const float flDistance = vLocalPos.DistTo(vFinalHitbox);
 
-		// Check FOV only if using FOV-based target selection
 		if (Vars::Aimbot::TargetSelection == 1 && flFOV > Vars::Aimbot::FOV)
 			continue;
 
@@ -234,10 +221,10 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 		switch (Vars::Aimbot::TargetSelection)
 		{
-		case 0: // Distance
+		case 0:
 			bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
 			break;
-		case 1: // FOV
+		case 1:
 			bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
 			break;
 		}
@@ -258,35 +245,62 @@ void CAimbotHitscan::AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTa
 {
 	const Vector vLocalPos = pLocal->GetShootPos();
 	Vector vAngle = U::Math.GetAngleToPosition(vLocalPos, vTarget);
+	const Vector vOldAngles = pCmd->viewangles;
 
 	switch (Vars::Aimbot::Mode)
 	{
-	case 0: // Plain
+	case 0:
 		pCmd->viewangles = vAngle;
+		U::Math.ClampAngles(pCmd->viewangles);
 		I::EngineClient->SetViewAngles(pCmd->viewangles);
 		break;
 
-	case 1: // Smooth
+	case 1:
 	{
 		Vector vDelta = vAngle - pCmd->viewangles;
 		U::Math.ClampAngles(vDelta);
 		pCmd->viewangles += vDelta / Vars::Aimbot::SmoothAmount;
+		U::Math.ClampAngles(pCmd->viewangles);
 		I::EngineClient->SetViewAngles(pCmd->viewangles);
 		break;
 	}
 
-	case 2: // Silent (PSilent)
-		pCmd->viewangles = vAngle;
-		G::bPSilentAngles = true;
+	case 2:
+	{
+		auto pWeapon = pLocal->GetActiveWeapon();
+		if (pWeapon)
+			G::Attacking = SDK::IsAttacking(pLocal, pWeapon, pCmd);
+		
+		if (G::Attacking == 1)
+		{
+			U::Math.FixMovement(pCmd, vOldAngles, vAngle);
+			pCmd->viewangles = vAngle;
+			U::Math.ClampAngles(pCmd->viewangles);
+			G::bSilentAngles = true;
+		}
 		break;
 	}
 
-	U::Math.ClampAngles(pCmd->viewangles);
+	case 3:
+	{
+		auto pWeapon = pLocal->GetActiveWeapon();
+		if (pWeapon)
+			G::Attacking = SDK::IsAttacking(pLocal, pWeapon, pCmd);
+		
+		if (G::Attacking == 1)
+		{
+			U::Math.FixMovement(pCmd, vOldAngles, vAngle);
+			pCmd->viewangles = vAngle;
+			U::Math.ClampAngles(pCmd->viewangles);
+			G::bPSilentAngles = true;
+		}
+		break;
+	}
+	}
 }
 
 void CAimbotHitscan::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 {
-	// Reset active state at the start of each frame
 	G::bAimbotActive = false;
 
 	if (!pLocal || !pLocal->IsAlive())
@@ -297,14 +311,11 @@ void CAimbotHitscan::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 	if (!target.pEntity)
 		return;
 
-	// We have a valid target - set active state
 	G::bAimbotActive = true;
+	F::Aimbot.SetAiming(true);
+
+	if (Vars::Aimbot::AutoShoot)
+		pCmd->buttons |= IN_ATTACK;
 
 	AimAt(pLocal, pCmd, target.vPos);
-
-	// Auto shoot if enabled
-	if (Vars::Aimbot::AutoShoot)
-	{
-		pCmd->buttons |= IN_ATTACK;
-	}
 }

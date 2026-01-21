@@ -1,4 +1,5 @@
 #include "Math.h"
+#include "../../SDK/Includes/usercmd.h"
 
 void CUtil_Math::SinCos(float r, float* s, float* c)
 {
@@ -229,4 +230,23 @@ Vector CUtil_Math::VelocityToAngles(const Vector direction)
 	}
 
 	return { pitch, yaw, 0.0f };
+}
+
+void CUtil_Math::FixMovement(CUserCmd* pCmd, const Vector& vOldAngles, const Vector& vNewAngles)
+{
+	// Get movement vector
+	Vector vMove(pCmd->forwardmove, pCmd->sidemove, pCmd->upmove);
+	float flSpeed = vMove.Lenght2D();
+	
+	// Get movement angle
+	Vector vMoveAng;
+	VectorAngles(vMove, vMoveAng);
+	
+	// Calculate yaw delta
+	float flYawDelta = vNewAngles.y - vOldAngles.y;
+	float flYaw = DEG2RAD(flYawDelta + vMoveAng.y);
+	
+	// Apply rotation
+	pCmd->forwardmove = cosf(flYaw) * flSpeed;
+	pCmd->sidemove = sinf(flYaw) * flSpeed;
 }

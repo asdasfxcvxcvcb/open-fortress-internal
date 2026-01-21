@@ -18,24 +18,72 @@ namespace Vars
 	{
 		std::string category;
 		std::string name;
+		std::string fullName; // "Category.Name" for easy lookup
 		std::function<void(json&)> save;
 		std::function<void(const json&)> load;
+		
+		// Type-specific getters/setters for binds
+		enum class Type { Bool, Int, Float } type;
+		std::function<bool()> getBool;
+		std::function<void(bool)> setBool;
+		std::function<int()> getInt;
+		std::function<void(int)> setInt;
+		std::function<float()> getFloat;
+		std::function<void(float)> setFloat;
 	};
 	
 	inline std::vector<VarEntry> RegisteredVars;
 	
-	// Macro to register variables automatically
+	// Helper functions for registration
+	template<typename T>
+	inline void RegisterVar(const char* cat, const char* name, T* var);
+	
+	template<>
+	inline void RegisterVar<bool>(const char* cat, const char* name, bool* var) {
+		VarEntry entry;
+		entry.category = cat;
+		entry.name = name;
+		entry.fullName = std::string(cat) + "." + name;
+		entry.type = VarEntry::Type::Bool;
+		entry.save = [cat, name, var](json& j) { j[cat][name] = *var; };
+		entry.load = [cat, name, var](const json& j) { if (j.contains(cat) && j[cat].contains(name)) *var = j[cat][name]; };
+		entry.getBool = [var]() { return *var; };
+		entry.setBool = [var](bool v) { *var = v; };
+		RegisteredVars.push_back(entry);
+	}
+	
+	template<>
+	inline void RegisterVar<int>(const char* cat, const char* name, int* var) {
+		VarEntry entry;
+		entry.category = cat;
+		entry.name = name;
+		entry.fullName = std::string(cat) + "." + name;
+		entry.type = VarEntry::Type::Int;
+		entry.save = [cat, name, var](json& j) { j[cat][name] = *var; };
+		entry.load = [cat, name, var](const json& j) { if (j.contains(cat) && j[cat].contains(name)) *var = j[cat][name]; };
+		entry.getInt = [var]() { return *var; };
+		entry.setInt = [var](int v) { *var = v; };
+		RegisteredVars.push_back(entry);
+	}
+	
+	template<>
+	inline void RegisterVar<float>(const char* cat, const char* name, float* var) {
+		VarEntry entry;
+		entry.category = cat;
+		entry.name = name;
+		entry.fullName = std::string(cat) + "." + name;
+		entry.type = VarEntry::Type::Float;
+		entry.save = [cat, name, var](json& j) { j[cat][name] = *var; };
+		entry.load = [cat, name, var](const json& j) { if (j.contains(cat) && j[cat].contains(name)) *var = j[cat][name]; };
+		entry.getFloat = [var]() { return *var; };
+		entry.setFloat = [var](float v) { *var = v; };
+		RegisteredVars.push_back(entry);
+	}
+	
+	// Macro to register variables automatically with full bind support
 	#define REGISTER_VAR(cat, type, name, defaultVal) \
 		inline type name = defaultVal; \
-		inline bool _reg_##cat##_##name = []() { \
-			Vars::RegisteredVars.push_back({ \
-				#cat, \
-				#name, \
-				[](json& j) { j[#cat][#name] = Vars::cat::name; }, \
-				[](const json& j) { if (j.contains(#cat) && j[#cat].contains(#name)) Vars::cat::name = j[#cat][#name]; } \
-			}); \
-			return true; \
-		}();
+		inline bool _reg_##cat##_##name = (Vars::RegisterVar<type>(#cat, #name, &Vars::cat::name), true);
 
 	namespace Aimbot
 	{
@@ -56,6 +104,8 @@ namespace Vars
 	namespace ESP
 	{
 		REGISTER_VAR(ESP, bool, Enabled, true)
+		
+		// Player ESP
 		REGISTER_VAR(ESP, bool, Players, true)
 		REGISTER_VAR(ESP, bool, PlayerBoxes, true)
 		REGISTER_VAR(ESP, bool, PlayerNames, true)
@@ -63,6 +113,15 @@ namespace Vars
 		REGISTER_VAR(ESP, bool, PlayerHealthBar, true)
 		REGISTER_VAR(ESP, bool, PlayerWeapons, true)
 		REGISTER_VAR(ESP, bool, PlayerConditions, true)
+		
+		// Player Filters
+		REGISTER_VAR(ESP, bool, IgnoreLocal, false)
+		REGISTER_VAR(ESP, bool, IgnoreTeammates, false)
+		REGISTER_VAR(ESP, bool, IgnoreEnemies, false)
+		REGISTER_VAR(ESP, bool, IgnoreFriends, false)
+		REGISTER_VAR(ESP, bool, IgnoreCloaked, false)
+		
+		// World ESP
 		REGISTER_VAR(ESP, bool, Items, true)
 		REGISTER_VAR(ESP, bool, Ammo, true)
 		REGISTER_VAR(ESP, bool, Health, true)

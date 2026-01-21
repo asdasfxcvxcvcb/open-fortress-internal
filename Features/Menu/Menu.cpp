@@ -386,38 +386,25 @@ void CMenu::Render()
 				// Save current settings to bind
 				CaptureBindSettings(m_nEditingBindIndex);
 				
-				// Restore original settings
-				Vars::Aimbot::Enabled = m_mOriginalBoolSettings["Aimbot.Enabled"];
-				Vars::Aimbot::Mode = m_mOriginalIntSettings["Aimbot.Mode"];
-				Vars::Aimbot::SmoothAmount = m_mOriginalFloatSettings["Aimbot.SmoothAmount"];
-				Vars::Aimbot::FOV = m_mOriginalFloatSettings["Aimbot.FOV"];
-				Vars::Aimbot::TargetSelection = m_mOriginalIntSettings["Aimbot.TargetSelection"];
-				Vars::Aimbot::Hitbox = m_mOriginalIntSettings["Aimbot.Hitbox"];
-				Vars::Aimbot::IgnoreCloaked = m_mOriginalBoolSettings["Aimbot.IgnoreCloaked"];
-				Vars::Aimbot::IgnoreInvulnerable = m_mOriginalBoolSettings["Aimbot.IgnoreInvulnerable"];
-				Vars::Aimbot::AutoShoot = m_mOriginalBoolSettings["Aimbot.AutoShoot"];
-				Vars::Aimbot::DrawFOV = m_mOriginalBoolSettings["Aimbot.DrawFOV"];
-				Vars::Aimbot::FFAMode = m_mOriginalBoolSettings["Aimbot.FFAMode"];
-				Vars::Aimbot::IgnoreFriends = m_mOriginalBoolSettings["Aimbot.IgnoreFriends"];
-
-				Vars::ESP::Enabled = m_mOriginalBoolSettings["ESP.Enabled"];
-				Vars::ESP::Players = m_mOriginalBoolSettings["ESP.Players"];
-				Vars::ESP::PlayerBoxes = m_mOriginalBoolSettings["ESP.PlayerBoxes"];
-				Vars::ESP::PlayerNames = m_mOriginalBoolSettings["ESP.PlayerNames"];
-				Vars::ESP::PlayerHealth = m_mOriginalBoolSettings["ESP.PlayerHealth"];
-				Vars::ESP::PlayerHealthBar = m_mOriginalBoolSettings["ESP.PlayerHealthBar"];
-				Vars::ESP::PlayerWeapons = m_mOriginalBoolSettings["ESP.PlayerWeapons"];
-				Vars::ESP::PlayerConditions = m_mOriginalBoolSettings["ESP.PlayerConditions"];
-				Vars::ESP::Items = m_mOriginalBoolSettings["ESP.Items"];
-				Vars::ESP::Ammo = m_mOriginalBoolSettings["ESP.Ammo"];
-				Vars::ESP::Health = m_mOriginalBoolSettings["ESP.Health"];
-				Vars::ESP::Weapons = m_mOriginalBoolSettings["ESP.Weapons"];
-				Vars::ESP::Powerups = m_mOriginalBoolSettings["ESP.Powerups"];
-
-				Vars::Misc::Thirdperson = m_mOriginalBoolSettings["Misc.Thirdperson"];
-				Vars::Misc::ThirdpersonRight = m_mOriginalFloatSettings["Misc.ThirdpersonRight"];
-				Vars::Misc::ThirdpersonUp = m_mOriginalFloatSettings["Misc.ThirdpersonUp"];
-				Vars::Misc::ThirdpersonBack = m_mOriginalFloatSettings["Misc.ThirdpersonBack"];
+				// Restore original settings using RegisteredVars
+				for (const auto& var : Vars::RegisteredVars)
+				{
+					switch (var.type)
+					{
+					case Vars::VarEntry::Type::Bool:
+						if (m_mOriginalBoolSettings.count(var.fullName))
+							var.setBool(m_mOriginalBoolSettings[var.fullName]);
+						break;
+					case Vars::VarEntry::Type::Int:
+						if (m_mOriginalIntSettings.count(var.fullName))
+							var.setInt(m_mOriginalIntSettings[var.fullName]);
+						break;
+					case Vars::VarEntry::Type::Float:
+						if (m_mOriginalFloatSettings.count(var.fullName))
+							var.setFloat(m_mOriginalFloatSettings[var.fullName]);
+						break;
+					}
+				}
 				
 				// Clear stored settings
 				m_mOriginalBoolSettings.clear();
@@ -546,29 +533,70 @@ void CMenu::DrawVisualsTab()
 	
 	if (visualsSubTab == 0)
 	{
-		// ESP Settings
-		ImGui::Text("ESP Settings");
-		ImGui::Separator();
+		// ESP Settings - organized with columns
+		ImGui::Columns(2, nullptr, false);
 		
-		ImGui::Checkbox("Enable ESP", &Vars::ESP::Enabled);
+		// Left Column - Global & Players
+		ImGui::BeginChild("ESPLeft", ImVec2(0, 0), true);
+		{
+			// Global Settings
+			if (ImGui::CollapsingHeader("Global", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Checkbox("Enable ESP", &Vars::ESP::Enabled);
+				ImGui::Spacing();
+			}
+			
+			// Player ESP
+			if (ImGui::CollapsingHeader("Players", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Checkbox("Player ESP", &Vars::ESP::Players);
+				ImGui::Spacing();
+				
+				ImGui::Text("Filters:");
+				ImGui::Indent();
+				ImGui::Checkbox("Ignore Local", &Vars::ESP::IgnoreLocal);
+				ImGui::Checkbox("Ignore Teammates", &Vars::ESP::IgnoreTeammates);
+				ImGui::Checkbox("Ignore Enemies", &Vars::ESP::IgnoreEnemies);
+				ImGui::Checkbox("Ignore Friends", &Vars::ESP::IgnoreFriends);
+				ImGui::Checkbox("Ignore Cloaked", &Vars::ESP::IgnoreCloaked);
+				ImGui::Unindent();
+				ImGui::Spacing();
+				
+				ImGui::Text("Draw:");
+				ImGui::Indent();
+				ImGui::Checkbox("Boxes", &Vars::ESP::PlayerBoxes);
+				ImGui::Checkbox("Names", &Vars::ESP::PlayerNames);
+				ImGui::Checkbox("Health Text", &Vars::ESP::PlayerHealth);
+				ImGui::Checkbox("Health Bar", &Vars::ESP::PlayerHealthBar);
+				ImGui::Checkbox("Weapons", &Vars::ESP::PlayerWeapons);
+				ImGui::Checkbox("Conditions", &Vars::ESP::PlayerConditions);
+				ImGui::Unindent();
+			}
+		}
+		ImGui::EndChild();
 		
-		ImGui::Separator();
-		ImGui::Text("Players");
-		ImGui::Checkbox("Player ESP", &Vars::ESP::Players);
-		ImGui::Checkbox("Player Boxes", &Vars::ESP::PlayerBoxes);
-		ImGui::Checkbox("Player Names", &Vars::ESP::PlayerNames);
-		ImGui::Checkbox("Health Text", &Vars::ESP::PlayerHealth);
-		ImGui::Checkbox("Health Bar", &Vars::ESP::PlayerHealthBar);
-		ImGui::Checkbox("Player Weapons", &Vars::ESP::PlayerWeapons);
-		ImGui::Checkbox("Player Conditions", &Vars::ESP::PlayerConditions);
+		ImGui::NextColumn();
 		
-		ImGui::Separator();
-		ImGui::Text("World Items");
-		ImGui::Checkbox("Item ESP", &Vars::ESP::Items);
-		ImGui::Checkbox("Ammo Packs", &Vars::ESP::Ammo);
-		ImGui::Checkbox("Health Packs", &Vars::ESP::Health);
-		ImGui::Checkbox("Weapon Spawns", &Vars::ESP::Weapons);
-		ImGui::Checkbox("Powerups", &Vars::ESP::Powerups);
+		// Right Column - World Items
+		ImGui::BeginChild("ESPRight", ImVec2(0, 0), true);
+		{
+			if (ImGui::CollapsingHeader("World Items", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Checkbox("Item ESP", &Vars::ESP::Items);
+				ImGui::Spacing();
+				
+				ImGui::Text("Draw:");
+				ImGui::Indent();
+				ImGui::Checkbox("Ammo Packs", &Vars::ESP::Ammo);
+				ImGui::Checkbox("Health Packs", &Vars::ESP::Health);
+				ImGui::Checkbox("Weapon Spawns", &Vars::ESP::Weapons);
+				ImGui::Checkbox("Powerups", &Vars::ESP::Powerups);
+				ImGui::Unindent();
+			}
+		}
+		ImGui::EndChild();
+		
+		ImGui::Columns(1);
 	}
 	else if (visualsSubTab == 1)
 	{
@@ -822,76 +850,43 @@ void CMenu::CaptureBindSettings(int bindIndex)
 	bind.intSettings.clear();
 	bind.floatSettings.clear();
 
-	// Only capture settings that have CHANGED from the original values
-	// This way the bind only modifies what you actually changed, not everything
-	
-	// Capture changed Aimbot settings
-	if (Vars::Aimbot::Enabled != m_mOriginalBoolSettings["Aimbot.Enabled"])
-		bind.boolSettings["Aimbot.Enabled"] = Vars::Aimbot::Enabled;
-	if (Vars::Aimbot::Mode != m_mOriginalIntSettings["Aimbot.Mode"])
-		bind.intSettings["Aimbot.Mode"] = Vars::Aimbot::Mode;
-	if (Vars::Aimbot::SmoothAmount != m_mOriginalFloatSettings["Aimbot.SmoothAmount"])
-		bind.floatSettings["Aimbot.SmoothAmount"] = Vars::Aimbot::SmoothAmount;
-	if (Vars::Aimbot::FOV != m_mOriginalFloatSettings["Aimbot.FOV"])
-		bind.floatSettings["Aimbot.FOV"] = Vars::Aimbot::FOV;
-	if (Vars::Aimbot::TargetSelection != m_mOriginalIntSettings["Aimbot.TargetSelection"])
-		bind.intSettings["Aimbot.TargetSelection"] = Vars::Aimbot::TargetSelection;
-	if (Vars::Aimbot::Hitbox != m_mOriginalIntSettings["Aimbot.Hitbox"])
-		bind.intSettings["Aimbot.Hitbox"] = Vars::Aimbot::Hitbox;
-	if (Vars::Aimbot::IgnoreCloaked != m_mOriginalBoolSettings["Aimbot.IgnoreCloaked"])
-		bind.boolSettings["Aimbot.IgnoreCloaked"] = Vars::Aimbot::IgnoreCloaked;
-	if (Vars::Aimbot::IgnoreInvulnerable != m_mOriginalBoolSettings["Aimbot.IgnoreInvulnerable"])
-		bind.boolSettings["Aimbot.IgnoreInvulnerable"] = Vars::Aimbot::IgnoreInvulnerable;
-	if (Vars::Aimbot::AutoShoot != m_mOriginalBoolSettings["Aimbot.AutoShoot"])
-		bind.boolSettings["Aimbot.AutoShoot"] = Vars::Aimbot::AutoShoot;
-	if (Vars::Aimbot::DrawFOV != m_mOriginalBoolSettings["Aimbot.DrawFOV"])
-		bind.boolSettings["Aimbot.DrawFOV"] = Vars::Aimbot::DrawFOV;
-	if (Vars::Aimbot::FFAMode != m_mOriginalBoolSettings["Aimbot.FFAMode"])
-		bind.boolSettings["Aimbot.FFAMode"] = Vars::Aimbot::FFAMode;
-	if (Vars::Aimbot::IgnoreFriends != m_mOriginalBoolSettings["Aimbot.IgnoreFriends"])
-		bind.boolSettings["Aimbot.IgnoreFriends"] = Vars::Aimbot::IgnoreFriends;
-
-	// Capture changed ESP settings
-	if (Vars::ESP::Enabled != m_mOriginalBoolSettings["ESP.Enabled"])
-		bind.boolSettings["ESP.Enabled"] = Vars::ESP::Enabled;
-	if (Vars::ESP::Players != m_mOriginalBoolSettings["ESP.Players"])
-		bind.boolSettings["ESP.Players"] = Vars::ESP::Players;
-	if (Vars::ESP::PlayerBoxes != m_mOriginalBoolSettings["ESP.PlayerBoxes"])
-		bind.boolSettings["ESP.PlayerBoxes"] = Vars::ESP::PlayerBoxes;
-	if (Vars::ESP::PlayerNames != m_mOriginalBoolSettings["ESP.PlayerNames"])
-		bind.boolSettings["ESP.PlayerNames"] = Vars::ESP::PlayerNames;
-	if (Vars::ESP::PlayerHealth != m_mOriginalBoolSettings["ESP.PlayerHealth"])
-		bind.boolSettings["ESP.PlayerHealth"] = Vars::ESP::PlayerHealth;
-	if (Vars::ESP::PlayerHealthBar != m_mOriginalBoolSettings["ESP.PlayerHealthBar"])
-		bind.boolSettings["ESP.PlayerHealthBar"] = Vars::ESP::PlayerHealthBar;
-	if (Vars::ESP::PlayerWeapons != m_mOriginalBoolSettings["ESP.PlayerWeapons"])
-		bind.boolSettings["ESP.PlayerWeapons"] = Vars::ESP::PlayerWeapons;
-	if (Vars::ESP::PlayerConditions != m_mOriginalBoolSettings["ESP.PlayerConditions"])
-		bind.boolSettings["ESP.PlayerConditions"] = Vars::ESP::PlayerConditions;
-	if (Vars::ESP::Items != m_mOriginalBoolSettings["ESP.Items"])
-		bind.boolSettings["ESP.Items"] = Vars::ESP::Items;
-	if (Vars::ESP::Ammo != m_mOriginalBoolSettings["ESP.Ammo"])
-		bind.boolSettings["ESP.Ammo"] = Vars::ESP::Ammo;
-	if (Vars::ESP::Health != m_mOriginalBoolSettings["ESP.Health"])
-		bind.boolSettings["ESP.Health"] = Vars::ESP::Health;
-	if (Vars::ESP::Weapons != m_mOriginalBoolSettings["ESP.Weapons"])
-		bind.boolSettings["ESP.Weapons"] = Vars::ESP::Weapons;
-	if (Vars::ESP::Powerups != m_mOriginalBoolSettings["ESP.Powerups"])
-		bind.boolSettings["ESP.Powerups"] = Vars::ESP::Powerups;
-
-	// Capture changed Misc settings
-	if (Vars::Misc::Thirdperson != m_mOriginalBoolSettings["Misc.Thirdperson"])
-		bind.boolSettings["Misc.Thirdperson"] = Vars::Misc::Thirdperson;
-	if (Vars::Misc::ThirdpersonRight != m_mOriginalFloatSettings["Misc.ThirdpersonRight"])
-		bind.floatSettings["Misc.ThirdpersonRight"] = Vars::Misc::ThirdpersonRight;
-	if (Vars::Misc::ThirdpersonUp != m_mOriginalFloatSettings["Misc.ThirdpersonUp"])
-		bind.floatSettings["Misc.ThirdpersonUp"] = Vars::Misc::ThirdpersonUp;
-	if (Vars::Misc::ThirdpersonBack != m_mOriginalFloatSettings["Misc.ThirdpersonBack"])
-		bind.floatSettings["Misc.ThirdpersonBack"] = Vars::Misc::ThirdpersonBack;
-	
-	// NOTE: To add new settings to binds, just add them here following the pattern:
-	// if (Vars::Category::SettingName != m_mOriginalBoolSettings["Category.SettingName"])
-	//     bind.boolSettings["Category.SettingName"] = Vars::Category::SettingName;
+	// Automatically capture all changed settings using RegisteredVars
+	for (const auto& var : Vars::RegisteredVars)
+	{
+		switch (var.type)
+		{
+		case Vars::VarEntry::Type::Bool:
+		{
+			if (m_mOriginalBoolSettings.count(var.fullName))
+			{
+				bool currentValue = var.getBool();
+				if (currentValue != m_mOriginalBoolSettings[var.fullName])
+					bind.boolSettings[var.fullName] = currentValue;
+			}
+			break;
+		}
+		case Vars::VarEntry::Type::Int:
+		{
+			if (m_mOriginalIntSettings.count(var.fullName))
+			{
+				int currentValue = var.getInt();
+				if (currentValue != m_mOriginalIntSettings[var.fullName])
+					bind.intSettings[var.fullName] = currentValue;
+			}
+			break;
+		}
+		case Vars::VarEntry::Type::Float:
+		{
+			if (m_mOriginalFloatSettings.count(var.fullName))
+			{
+				float currentValue = var.getFloat();
+				if (currentValue != m_mOriginalFloatSettings[var.fullName])
+					bind.floatSettings[var.fullName] = currentValue;
+			}
+			break;
+		}
+		}
+	}
 }
 
 void CMenu::ApplyBindSettings(int bindIndex)
@@ -901,45 +896,25 @@ void CMenu::ApplyBindSettings(int bindIndex)
 
 	auto& bind = Vars::Binds[bindIndex];
 
-	// Apply all Aimbot settings
-	if (bind.boolSettings.count("Aimbot.Enabled")) Vars::Aimbot::Enabled = bind.boolSettings["Aimbot.Enabled"];
-	if (bind.intSettings.count("Aimbot.Mode")) Vars::Aimbot::Mode = bind.intSettings["Aimbot.Mode"];
-	if (bind.floatSettings.count("Aimbot.SmoothAmount")) Vars::Aimbot::SmoothAmount = bind.floatSettings["Aimbot.SmoothAmount"];
-	if (bind.floatSettings.count("Aimbot.FOV")) Vars::Aimbot::FOV = bind.floatSettings["Aimbot.FOV"];
-	if (bind.intSettings.count("Aimbot.TargetSelection")) Vars::Aimbot::TargetSelection = bind.intSettings["Aimbot.TargetSelection"];
-	if (bind.intSettings.count("Aimbot.Hitbox")) Vars::Aimbot::Hitbox = bind.intSettings["Aimbot.Hitbox"];
-	if (bind.boolSettings.count("Aimbot.IgnoreCloaked")) Vars::Aimbot::IgnoreCloaked = bind.boolSettings["Aimbot.IgnoreCloaked"];
-	if (bind.boolSettings.count("Aimbot.IgnoreInvulnerable")) Vars::Aimbot::IgnoreInvulnerable = bind.boolSettings["Aimbot.IgnoreInvulnerable"];
-	if (bind.boolSettings.count("Aimbot.AutoShoot")) Vars::Aimbot::AutoShoot = bind.boolSettings["Aimbot.AutoShoot"];
-	if (bind.boolSettings.count("Aimbot.DrawFOV")) Vars::Aimbot::DrawFOV = bind.boolSettings["Aimbot.DrawFOV"];
-	if (bind.boolSettings.count("Aimbot.FFAMode")) Vars::Aimbot::FFAMode = bind.boolSettings["Aimbot.FFAMode"];
-	if (bind.boolSettings.count("Aimbot.IgnoreFriends")) Vars::Aimbot::IgnoreFriends = bind.boolSettings["Aimbot.IgnoreFriends"];
-
-	// Apply all ESP settings
-	if (bind.boolSettings.count("ESP.Enabled")) Vars::ESP::Enabled = bind.boolSettings["ESP.Enabled"];
-	if (bind.boolSettings.count("ESP.Players")) Vars::ESP::Players = bind.boolSettings["ESP.Players"];
-	if (bind.boolSettings.count("ESP.PlayerBoxes")) Vars::ESP::PlayerBoxes = bind.boolSettings["ESP.PlayerBoxes"];
-	if (bind.boolSettings.count("ESP.PlayerNames")) Vars::ESP::PlayerNames = bind.boolSettings["ESP.PlayerNames"];
-	if (bind.boolSettings.count("ESP.PlayerHealth")) Vars::ESP::PlayerHealth = bind.boolSettings["ESP.PlayerHealth"];
-	if (bind.boolSettings.count("ESP.PlayerHealthBar")) Vars::ESP::PlayerHealthBar = bind.boolSettings["ESP.PlayerHealthBar"];
-	if (bind.boolSettings.count("ESP.PlayerWeapons")) Vars::ESP::PlayerWeapons = bind.boolSettings["ESP.PlayerWeapons"];
-	if (bind.boolSettings.count("ESP.PlayerConditions")) Vars::ESP::PlayerConditions = bind.boolSettings["ESP.PlayerConditions"];
-	if (bind.boolSettings.count("ESP.Items")) Vars::ESP::Items = bind.boolSettings["ESP.Items"];
-	if (bind.boolSettings.count("ESP.Ammo")) Vars::ESP::Ammo = bind.boolSettings["ESP.Ammo"];
-	if (bind.boolSettings.count("ESP.Health")) Vars::ESP::Health = bind.boolSettings["ESP.Health"];
-	if (bind.boolSettings.count("ESP.Weapons")) Vars::ESP::Weapons = bind.boolSettings["ESP.Weapons"];
-	if (bind.boolSettings.count("ESP.Powerups")) Vars::ESP::Powerups = bind.boolSettings["ESP.Powerups"];
-
-	// Apply all Misc settings
-	if (bind.boolSettings.count("Misc.Thirdperson")) Vars::Misc::Thirdperson = bind.boolSettings["Misc.Thirdperson"];
-	if (bind.floatSettings.count("Misc.ThirdpersonRight")) Vars::Misc::ThirdpersonRight = bind.floatSettings["Misc.ThirdpersonRight"];
-	if (bind.floatSettings.count("Misc.ThirdpersonUp")) Vars::Misc::ThirdpersonUp = bind.floatSettings["Misc.ThirdpersonUp"];
-	if (bind.floatSettings.count("Misc.ThirdpersonBack")) Vars::Misc::ThirdpersonBack = bind.floatSettings["Misc.ThirdpersonBack"];
-	
-	// NOTE: To add new settings to binds, just add them here following the pattern:
-	// if (bind.boolSettings.count("Category.SettingName")) Vars::Category::SettingName = bind.boolSettings["Category.SettingName"];
-	// if (bind.intSettings.count("Category.SettingName")) Vars::Category::SettingName = bind.intSettings["Category.SettingName"];
-	// if (bind.floatSettings.count("Category.SettingName")) Vars::Category::SettingName = bind.floatSettings["Category.SettingName"];
+	// Automatically apply all settings using RegisteredVars
+	for (const auto& var : Vars::RegisteredVars)
+	{
+		switch (var.type)
+		{
+		case Vars::VarEntry::Type::Bool:
+			if (bind.boolSettings.count(var.fullName))
+				var.setBool(bind.boolSettings[var.fullName]);
+			break;
+		case Vars::VarEntry::Type::Int:
+			if (bind.intSettings.count(var.fullName))
+				var.setInt(bind.intSettings[var.fullName]);
+			break;
+		case Vars::VarEntry::Type::Float:
+			if (bind.floatSettings.count(var.fullName))
+				var.setFloat(bind.floatSettings[var.fullName]);
+			break;
+		}
+	}
 }
 
 void CMenu::CheckBindActivation()
@@ -980,47 +955,24 @@ void CMenu::CheckBindActivation()
 		// Handle state changes
 		if (bind.isActive && !wasActive)
 		{
-			// Bind just activated - store current values and apply bind
-			// Store what the settings were BEFORE this bind
-			for (const auto& setting : bind.boolSettings)
+			// Bind just activated - store current values using RegisteredVars
+			for (const auto& var : Vars::RegisteredVars)
 			{
-				if (setting.first == "Aimbot.Enabled") bind.previousBoolSettings[setting.first] = Vars::Aimbot::Enabled;
-				else if (setting.first == "Aimbot.IgnoreCloaked") bind.previousBoolSettings[setting.first] = Vars::Aimbot::IgnoreCloaked;
-				else if (setting.first == "Aimbot.IgnoreInvulnerable") bind.previousBoolSettings[setting.first] = Vars::Aimbot::IgnoreInvulnerable;
-				else if (setting.first == "Aimbot.AutoShoot") bind.previousBoolSettings[setting.first] = Vars::Aimbot::AutoShoot;
-				else if (setting.first == "Aimbot.DrawFOV") bind.previousBoolSettings[setting.first] = Vars::Aimbot::DrawFOV;
-				else if (setting.first == "Aimbot.FFAMode") bind.previousBoolSettings[setting.first] = Vars::Aimbot::FFAMode;
-				else if (setting.first == "Aimbot.IgnoreFriends") bind.previousBoolSettings[setting.first] = Vars::Aimbot::IgnoreFriends;
-				else if (setting.first == "ESP.Enabled") bind.previousBoolSettings[setting.first] = Vars::ESP::Enabled;
-				else if (setting.first == "ESP.Players") bind.previousBoolSettings[setting.first] = Vars::ESP::Players;
-				else if (setting.first == "ESP.PlayerBoxes") bind.previousBoolSettings[setting.first] = Vars::ESP::PlayerBoxes;
-				else if (setting.first == "ESP.PlayerNames") bind.previousBoolSettings[setting.first] = Vars::ESP::PlayerNames;
-				else if (setting.first == "ESP.PlayerHealth") bind.previousBoolSettings[setting.first] = Vars::ESP::PlayerHealth;
-				else if (setting.first == "ESP.PlayerHealthBar") bind.previousBoolSettings[setting.first] = Vars::ESP::PlayerHealthBar;
-				else if (setting.first == "ESP.PlayerWeapons") bind.previousBoolSettings[setting.first] = Vars::ESP::PlayerWeapons;
-				else if (setting.first == "ESP.PlayerConditions") bind.previousBoolSettings[setting.first] = Vars::ESP::PlayerConditions;
-				else if (setting.first == "ESP.Items") bind.previousBoolSettings[setting.first] = Vars::ESP::Items;
-				else if (setting.first == "ESP.Ammo") bind.previousBoolSettings[setting.first] = Vars::ESP::Ammo;
-				else if (setting.first == "ESP.Health") bind.previousBoolSettings[setting.first] = Vars::ESP::Health;
-				else if (setting.first == "ESP.Weapons") bind.previousBoolSettings[setting.first] = Vars::ESP::Weapons;
-				else if (setting.first == "ESP.Powerups") bind.previousBoolSettings[setting.first] = Vars::ESP::Powerups;
-				else if (setting.first == "Misc.Thirdperson") bind.previousBoolSettings[setting.first] = Vars::Misc::Thirdperson;
-			}
-
-			for (const auto& setting : bind.intSettings)
-			{
-				if (setting.first == "Aimbot.Mode") bind.previousIntSettings[setting.first] = Vars::Aimbot::Mode;
-				else if (setting.first == "Aimbot.TargetSelection") bind.previousIntSettings[setting.first] = Vars::Aimbot::TargetSelection;
-				else if (setting.first == "Aimbot.Hitbox") bind.previousIntSettings[setting.first] = Vars::Aimbot::Hitbox;
-			}
-
-			for (const auto& setting : bind.floatSettings)
-			{
-				if (setting.first == "Aimbot.SmoothAmount") bind.previousFloatSettings[setting.first] = Vars::Aimbot::SmoothAmount;
-				else if (setting.first == "Aimbot.FOV") bind.previousFloatSettings[setting.first] = Vars::Aimbot::FOV;
-				else if (setting.first == "Misc.ThirdpersonRight") bind.previousFloatSettings[setting.first] = Vars::Misc::ThirdpersonRight;
-				else if (setting.first == "Misc.ThirdpersonUp") bind.previousFloatSettings[setting.first] = Vars::Misc::ThirdpersonUp;
-				else if (setting.first == "Misc.ThirdpersonBack") bind.previousFloatSettings[setting.first] = Vars::Misc::ThirdpersonBack;
+				switch (var.type)
+				{
+				case Vars::VarEntry::Type::Bool:
+					if (bind.boolSettings.count(var.fullName))
+						bind.previousBoolSettings[var.fullName] = var.getBool();
+					break;
+				case Vars::VarEntry::Type::Int:
+					if (bind.intSettings.count(var.fullName))
+						bind.previousIntSettings[var.fullName] = var.getInt();
+					break;
+				case Vars::VarEntry::Type::Float:
+					if (bind.floatSettings.count(var.fullName))
+						bind.previousFloatSettings[var.fullName] = var.getFloat();
+					break;
+				}
 			}
 
 			// Apply the bind settings
@@ -1028,46 +980,24 @@ void CMenu::CheckBindActivation()
 		}
 		else if (!bind.isActive && wasActive)
 		{
-			// Bind just deactivated - restore previous values
-			for (const auto& setting : bind.previousBoolSettings)
+			// Bind just deactivated - restore previous values using RegisteredVars
+			for (const auto& var : Vars::RegisteredVars)
 			{
-				if (setting.first == "Aimbot.Enabled") Vars::Aimbot::Enabled = setting.second;
-				else if (setting.first == "Aimbot.IgnoreCloaked") Vars::Aimbot::IgnoreCloaked = setting.second;
-				else if (setting.first == "Aimbot.IgnoreInvulnerable") Vars::Aimbot::IgnoreInvulnerable = setting.second;
-				else if (setting.first == "Aimbot.AutoShoot") Vars::Aimbot::AutoShoot = setting.second;
-				else if (setting.first == "Aimbot.DrawFOV") Vars::Aimbot::DrawFOV = setting.second;
-				else if (setting.first == "Aimbot.FFAMode") Vars::Aimbot::FFAMode = setting.second;
-				else if (setting.first == "Aimbot.IgnoreFriends") Vars::Aimbot::IgnoreFriends = setting.second;
-				else if (setting.first == "ESP.Enabled") Vars::ESP::Enabled = setting.second;
-				else if (setting.first == "ESP.Players") Vars::ESP::Players = setting.second;
-				else if (setting.first == "ESP.PlayerBoxes") Vars::ESP::PlayerBoxes = setting.second;
-				else if (setting.first == "ESP.PlayerNames") Vars::ESP::PlayerNames = setting.second;
-				else if (setting.first == "ESP.PlayerHealth") Vars::ESP::PlayerHealth = setting.second;
-				else if (setting.first == "ESP.PlayerHealthBar") Vars::ESP::PlayerHealthBar = setting.second;
-				else if (setting.first == "ESP.PlayerWeapons") Vars::ESP::PlayerWeapons = setting.second;
-				else if (setting.first == "ESP.PlayerConditions") Vars::ESP::PlayerConditions = setting.second;
-				else if (setting.first == "ESP.Items") Vars::ESP::Items = setting.second;
-				else if (setting.first == "ESP.Ammo") Vars::ESP::Ammo = setting.second;
-				else if (setting.first == "ESP.Health") Vars::ESP::Health = setting.second;
-				else if (setting.first == "ESP.Weapons") Vars::ESP::Weapons = setting.second;
-				else if (setting.first == "ESP.Powerups") Vars::ESP::Powerups = setting.second;
-				else if (setting.first == "Misc.Thirdperson") Vars::Misc::Thirdperson = setting.second;
-			}
-
-			for (const auto& setting : bind.previousIntSettings)
-			{
-				if (setting.first == "Aimbot.Mode") Vars::Aimbot::Mode = setting.second;
-				else if (setting.first == "Aimbot.TargetSelection") Vars::Aimbot::TargetSelection = setting.second;
-				else if (setting.first == "Aimbot.Hitbox") Vars::Aimbot::Hitbox = setting.second;
-			}
-
-			for (const auto& setting : bind.previousFloatSettings)
-			{
-				if (setting.first == "Aimbot.SmoothAmount") Vars::Aimbot::SmoothAmount = setting.second;
-				else if (setting.first == "Aimbot.FOV") Vars::Aimbot::FOV = setting.second;
-				else if (setting.first == "Misc.ThirdpersonRight") Vars::Misc::ThirdpersonRight = setting.second;
-				else if (setting.first == "Misc.ThirdpersonUp") Vars::Misc::ThirdpersonUp = setting.second;
-				else if (setting.first == "Misc.ThirdpersonBack") Vars::Misc::ThirdpersonBack = setting.second;
+				switch (var.type)
+				{
+				case Vars::VarEntry::Type::Bool:
+					if (bind.previousBoolSettings.count(var.fullName))
+						var.setBool(bind.previousBoolSettings[var.fullName]);
+					break;
+				case Vars::VarEntry::Type::Int:
+					if (bind.previousIntSettings.count(var.fullName))
+						var.setInt(bind.previousIntSettings[var.fullName]);
+					break;
+				case Vars::VarEntry::Type::Float:
+					if (bind.previousFloatSettings.count(var.fullName))
+						var.setFloat(bind.previousFloatSettings[var.fullName]);
+					break;
+				}
 			}
 
 			// Clear previous settings
@@ -1220,43 +1150,27 @@ void CMenu::DrawBindsTab()
 				// Load bind settings into vars first
 				ApplyBindSettings(idx);
 				
-				// THEN store these as the original baseline for comparison
+				// THEN store these as the original baseline for comparison using RegisteredVars
 				// This way we only capture what changes from the bind's current state
 				m_mOriginalBoolSettings.clear();
 				m_mOriginalIntSettings.clear();
 				m_mOriginalFloatSettings.clear();
 				
-				m_mOriginalBoolSettings["Aimbot.Enabled"] = Vars::Aimbot::Enabled;
-				m_mOriginalIntSettings["Aimbot.Mode"] = Vars::Aimbot::Mode;
-				m_mOriginalFloatSettings["Aimbot.SmoothAmount"] = Vars::Aimbot::SmoothAmount;
-				m_mOriginalFloatSettings["Aimbot.FOV"] = Vars::Aimbot::FOV;
-				m_mOriginalIntSettings["Aimbot.TargetSelection"] = Vars::Aimbot::TargetSelection;
-				m_mOriginalIntSettings["Aimbot.Hitbox"] = Vars::Aimbot::Hitbox;
-				m_mOriginalBoolSettings["Aimbot.IgnoreCloaked"] = Vars::Aimbot::IgnoreCloaked;
-				m_mOriginalBoolSettings["Aimbot.IgnoreInvulnerable"] = Vars::Aimbot::IgnoreInvulnerable;
-				m_mOriginalBoolSettings["Aimbot.AutoShoot"] = Vars::Aimbot::AutoShoot;
-				m_mOriginalBoolSettings["Aimbot.DrawFOV"] = Vars::Aimbot::DrawFOV;
-				m_mOriginalBoolSettings["Aimbot.FFAMode"] = Vars::Aimbot::FFAMode;
-				m_mOriginalBoolSettings["Aimbot.IgnoreFriends"] = Vars::Aimbot::IgnoreFriends;
-
-				m_mOriginalBoolSettings["ESP.Enabled"] = Vars::ESP::Enabled;
-				m_mOriginalBoolSettings["ESP.Players"] = Vars::ESP::Players;
-				m_mOriginalBoolSettings["ESP.PlayerBoxes"] = Vars::ESP::PlayerBoxes;
-				m_mOriginalBoolSettings["ESP.PlayerNames"] = Vars::ESP::PlayerNames;
-				m_mOriginalBoolSettings["ESP.PlayerHealth"] = Vars::ESP::PlayerHealth;
-				m_mOriginalBoolSettings["ESP.PlayerHealthBar"] = Vars::ESP::PlayerHealthBar;
-				m_mOriginalBoolSettings["ESP.PlayerWeapons"] = Vars::ESP::PlayerWeapons;
-				m_mOriginalBoolSettings["ESP.PlayerConditions"] = Vars::ESP::PlayerConditions;
-				m_mOriginalBoolSettings["ESP.Items"] = Vars::ESP::Items;
-				m_mOriginalBoolSettings["ESP.Ammo"] = Vars::ESP::Ammo;
-				m_mOriginalBoolSettings["ESP.Health"] = Vars::ESP::Health;
-				m_mOriginalBoolSettings["ESP.Weapons"] = Vars::ESP::Weapons;
-				m_mOriginalBoolSettings["ESP.Powerups"] = Vars::ESP::Powerups;
-
-				m_mOriginalBoolSettings["Misc.Thirdperson"] = Vars::Misc::Thirdperson;
-				m_mOriginalFloatSettings["Misc.ThirdpersonRight"] = Vars::Misc::ThirdpersonRight;
-				m_mOriginalFloatSettings["Misc.ThirdpersonUp"] = Vars::Misc::ThirdpersonUp;
-				m_mOriginalFloatSettings["Misc.ThirdpersonBack"] = Vars::Misc::ThirdpersonBack;
+				for (const auto& var : Vars::RegisteredVars)
+				{
+					switch (var.type)
+					{
+					case Vars::VarEntry::Type::Bool:
+						m_mOriginalBoolSettings[var.fullName] = var.getBool();
+						break;
+					case Vars::VarEntry::Type::Int:
+						m_mOriginalIntSettings[var.fullName] = var.getInt();
+						break;
+					case Vars::VarEntry::Type::Float:
+						m_mOriginalFloatSettings[var.fullName] = var.getFloat();
+						break;
+					}
+				}
 
 				// Enter edit mode
 				m_bInEditMode = true;
