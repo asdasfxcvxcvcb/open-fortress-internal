@@ -274,6 +274,16 @@ static const char* GetKeyNameImGui(int vk)
 	case VK_F10: return "F10";
 	case VK_F11: return "F11";
 	case VK_F12: return "F12";
+	case VK_NUMPAD0: return "Num 0";
+	case VK_NUMPAD1: return "Num 1";
+	case VK_NUMPAD2: return "Num 2";
+	case VK_NUMPAD3: return "Num 3";
+	case VK_NUMPAD4: return "Num 4";
+	case VK_NUMPAD5: return "Num 5";
+	case VK_NUMPAD6: return "Num 6";
+	case VK_NUMPAD7: return "Num 7";
+	case VK_NUMPAD8: return "Num 8";
+	case VK_NUMPAD9: return "Num 9";
 	default:
 		if (vk >= 'A' && vk <= 'Z')
 		{

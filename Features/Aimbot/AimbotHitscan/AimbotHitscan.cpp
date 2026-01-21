@@ -1,7 +1,8 @@
 #include "AimbotHitscan.h"
 #include "../Aimbot.h"
 #include "../../Vars.h"
-#include "../../SDK/Helpers/Helpers.h"
+#include "../../../SDK/Helpers.h"
+#include "../../../SDK/Helpers/Helpers.h"
 
 bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 {
