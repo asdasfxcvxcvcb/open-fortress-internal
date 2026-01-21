@@ -4,6 +4,7 @@
 #include "../../../SDK/Helpers.h"
 #include "../../../SDK/Helpers/Helpers.h"
 
+
 bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 {
 	if (!pEntity)
