@@ -4,6 +4,8 @@
 #include "../../Features/Aimbot/Aimbot.h"
 #include "../../Features/Thirdperson/Thirdperson.h"
 #include "../../Features/Menu/Menu.h"
+#include "../../Features/Chat/Chat.h"
+#include "../../Features/AutoStrafe/AutoStrafe.h"
 #include "../../vendor/imgui/imgui.h"
 
 DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx, float input_sample_frametime, CUserCmd* cmd)
@@ -68,6 +70,8 @@ DEFINE_HOOK(ClientModeShared_CreateMove, bool, __fastcall, void* ecx, void* edx,
 	F::EnginePrediction.Start(cmd);
 	{
 		F::Aimbot.Run(pLocal, cmd);
+		F::Chat.Run();
+		F::AutoStrafe.Run(pLocal, cmd);
 	}
 	F::EnginePrediction.Finish();
 

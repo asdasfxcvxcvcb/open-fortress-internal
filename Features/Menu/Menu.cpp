@@ -3,6 +3,7 @@
 #include "../Aimbot/AimbotHitscan/AimbotHitscan.h"
 #include "../ESP/ESP.h"
 #include "../Config/Config.h"
+#include "../Chat/Chat.h"
 #include "../../vendor/imgui/imgui.h"
 #include "../../vendor/imgui/imgui_impl_win32.h"
 #include "../../vendor/imgui/imgui_impl_dx9.h"
@@ -152,7 +153,7 @@ bool CMenu::Initialize(IDirect3DDevice9* pDevice)
 	style.FrameBorderSize = 0.0f;
 	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
 	style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-	style.Colors[ImGuiCol_CheckMark] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
+	style.Colors[ImGuiCol_CheckMark] = ImVec4(Vars::Colors::WindowColorR, Vars::Colors::WindowColorG, Vars::Colors::WindowColorB, Vars::Colors::WindowColorA);
 
 	// Setup backends
 	if (!ImGui_ImplWin32_Init(m_hWindow))
@@ -331,10 +332,10 @@ void CMenu::Render()
 
 			// Draw the FOV circle with ImGui using custom color
 			ImU32 circleColor = IM_COL32(
-				static_cast<int>(m_fAimbotFOVColor[0] * 255),
-				static_cast<int>(m_fAimbotFOVColor[1] * 255),
-				static_cast<int>(m_fAimbotFOVColor[2] * 255),
-				static_cast<int>(m_fAimbotFOVColor[3] * 255)
+				static_cast<int>(Vars::Colors::AimbotFOVR * 255),
+				static_cast<int>(Vars::Colors::AimbotFOVG * 255),
+				static_cast<int>(Vars::Colors::AimbotFOVB * 255),
+				static_cast<int>(Vars::Colors::AimbotFOVA * 255)
 			);
 			drawList->AddCircle(ImVec2(centerX, centerY), radius, circleColor, 64, 2.0f);
 		}
@@ -358,7 +359,7 @@ void CMenu::Render()
 	if (m_bOpen.load())
 		bShouldDrawKeybind = true;
 	
-	if (m_bShowKeybindWindow && bShouldDrawKeybind)
+	if (Vars::Misc::ShowKeybindWindow && bShouldDrawKeybind)
 	{
 		DrawKeybindWindow();
 	}
@@ -367,8 +368,8 @@ void CMenu::Render()
 	if (m_bOpen.load())
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
-		style.Colors[ImGuiCol_TitleBg] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
-		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
+		style.Colors[ImGuiCol_TitleBg] = ImVec4(Vars::Colors::WindowColorR, Vars::Colors::WindowColorG, Vars::Colors::WindowColorB, Vars::Colors::WindowColorA);
+		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(Vars::Colors::WindowColorR, Vars::Colors::WindowColorG, Vars::Colors::WindowColorB, Vars::Colors::WindowColorA);
 
 		ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver);
 		bool bOpen = m_bOpen.load();
@@ -455,8 +456,7 @@ void CMenu::Render()
 
 			if (ImGui::BeginTabItem("Misc"))
 			{
-				// Misc tab is now empty or can be removed
-				ImGui::Text("Misc settings moved to Visuals > Misc");
+				DrawMiscTab();
 				ImGui::EndTabItem();
 			}
 
@@ -584,32 +584,50 @@ void CMenu::DrawVisualsTab()
 		
 		// Menu Colors
 		ImGui::Text("Menu");
-		if (ImGui::ColorEdit4("Menu Background", m_fMenuBackgroundColor, colorFlags))
-			style.Colors[ImGuiCol_WindowBg] = ImVec4(m_fMenuBackgroundColor[0], m_fMenuBackgroundColor[1], m_fMenuBackgroundColor[2], m_fMenuBackgroundColor[3]);
-		
-		if (ImGui::ColorEdit4("Menu Text", m_fMenuTextColor, colorFlags))
-			style.Colors[ImGuiCol_Text] = ImVec4(m_fMenuTextColor[0], m_fMenuTextColor[1], m_fMenuTextColor[2], m_fMenuTextColor[3]);
-		
-		if (ImGui::ColorEdit4("Menu Accent", m_fMenuAccentColor, colorFlags))
+		float menuBg[4] = { Vars::Colors::MenuBackgroundR, Vars::Colors::MenuBackgroundG, Vars::Colors::MenuBackgroundB, Vars::Colors::MenuBackgroundA };
+		if (ImGui::ColorEdit4("Menu Background", menuBg, colorFlags))
 		{
-			style.Colors[ImGuiCol_CheckMark] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], m_fMenuAccentColor[3]);
-			style.Colors[ImGuiCol_SliderGrab] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], m_fMenuAccentColor[3]);
-			style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 1.0f);
-			style.Colors[ImGuiCol_Button] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 0.4f);
-			style.Colors[ImGuiCol_ButtonHovered] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 0.6f);
-			style.Colors[ImGuiCol_ButtonActive] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 0.8f);
-			style.Colors[ImGuiCol_Header] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 0.4f);
-			style.Colors[ImGuiCol_HeaderHovered] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 0.6f);
-			style.Colors[ImGuiCol_HeaderActive] = ImVec4(m_fMenuAccentColor[0], m_fMenuAccentColor[1], m_fMenuAccentColor[2], 0.8f);
+			Vars::Colors::MenuBackgroundR = menuBg[0]; Vars::Colors::MenuBackgroundG = menuBg[1]; Vars::Colors::MenuBackgroundB = menuBg[2]; Vars::Colors::MenuBackgroundA = menuBg[3];
+			style.Colors[ImGuiCol_WindowBg] = ImVec4(menuBg[0], menuBg[1], menuBg[2], menuBg[3]);
 		}
 		
-		ImGui::ColorEdit4("Keybind Window", m_fWindowColor, colorFlags);
+		float menuText[4] = { Vars::Colors::MenuTextR, Vars::Colors::MenuTextG, Vars::Colors::MenuTextB, Vars::Colors::MenuTextA };
+		if (ImGui::ColorEdit4("Menu Text", menuText, colorFlags))
+		{
+			Vars::Colors::MenuTextR = menuText[0]; Vars::Colors::MenuTextG = menuText[1]; Vars::Colors::MenuTextB = menuText[2]; Vars::Colors::MenuTextA = menuText[3];
+			style.Colors[ImGuiCol_Text] = ImVec4(menuText[0], menuText[1], menuText[2], menuText[3]);
+		}
+		
+		float menuAccent[4] = { Vars::Colors::MenuAccentR, Vars::Colors::MenuAccentG, Vars::Colors::MenuAccentB, Vars::Colors::MenuAccentA };
+		if (ImGui::ColorEdit4("Menu Accent", menuAccent, colorFlags))
+		{
+			Vars::Colors::MenuAccentR = menuAccent[0]; Vars::Colors::MenuAccentG = menuAccent[1]; Vars::Colors::MenuAccentB = menuAccent[2]; Vars::Colors::MenuAccentA = menuAccent[3];
+			style.Colors[ImGuiCol_CheckMark] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], menuAccent[3]);
+			style.Colors[ImGuiCol_SliderGrab] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], menuAccent[3]);
+			style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 1.0f);
+			style.Colors[ImGuiCol_Button] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 0.4f);
+			style.Colors[ImGuiCol_ButtonHovered] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 0.6f);
+			style.Colors[ImGuiCol_ButtonActive] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 0.8f);
+			style.Colors[ImGuiCol_Header] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 0.4f);
+			style.Colors[ImGuiCol_HeaderHovered] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 0.6f);
+			style.Colors[ImGuiCol_HeaderActive] = ImVec4(menuAccent[0], menuAccent[1], menuAccent[2], 0.8f);
+		}
+		
+		float windowColor[4] = { Vars::Colors::WindowColorR, Vars::Colors::WindowColorG, Vars::Colors::WindowColorB, Vars::Colors::WindowColorA };
+		if (ImGui::ColorEdit4("Keybind Window", windowColor, colorFlags))
+		{
+			Vars::Colors::WindowColorR = windowColor[0]; Vars::Colors::WindowColorG = windowColor[1]; Vars::Colors::WindowColorB = windowColor[2]; Vars::Colors::WindowColorA = windowColor[3];
+		}
 		
 		ImGui::Separator();
 		
 		// Aimbot Colors
 		ImGui::Text("Aimbot");
-		ImGui::ColorEdit4("FOV Circle", m_fAimbotFOVColor, colorFlags);
+		float fovColor[4] = { Vars::Colors::AimbotFOVR, Vars::Colors::AimbotFOVG, Vars::Colors::AimbotFOVB, Vars::Colors::AimbotFOVA };
+		if (ImGui::ColorEdit4("FOV Circle", fovColor, colorFlags))
+		{
+			Vars::Colors::AimbotFOVR = fovColor[0]; Vars::Colors::AimbotFOVG = fovColor[1]; Vars::Colors::AimbotFOVB = fovColor[2]; Vars::Colors::AimbotFOVA = fovColor[3];
+		}
 		
 		ImGui::Separator();
 		
@@ -617,33 +635,33 @@ void CMenu::DrawVisualsTab()
 		if (ImGui::Button("Reset to Default", ImVec2(200, 30)))
 		{
 			// Reset to defaults
-			m_fMenuBackgroundColor[0] = 0.05f; m_fMenuBackgroundColor[1] = 0.05f; m_fMenuBackgroundColor[2] = 0.05f; m_fMenuBackgroundColor[3] = 0.95f;
-			m_fMenuTextColor[0] = 1.0f; m_fMenuTextColor[1] = 1.0f; m_fMenuTextColor[2] = 1.0f; m_fMenuTextColor[3] = 1.0f;
-			m_fMenuAccentColor[0] = 0.0f; m_fMenuAccentColor[1] = 220.0f / 255.0f; m_fMenuAccentColor[2] = 0.0f; m_fMenuAccentColor[3] = 1.0f;
-			m_fWindowColor[0] = 0.0f; m_fWindowColor[1] = 220.0f / 255.0f; m_fWindowColor[2] = 0.0f; m_fWindowColor[3] = 1.0f;
-			m_fAimbotFOVColor[0] = 1.0f; m_fAimbotFOVColor[1] = 1.0f; m_fAimbotFOVColor[2] = 1.0f; m_fAimbotFOVColor[3] = 0.4f;
+			Vars::Colors::MenuBackgroundR = 0.05f; Vars::Colors::MenuBackgroundG = 0.05f; Vars::Colors::MenuBackgroundB = 0.05f; Vars::Colors::MenuBackgroundA = 0.95f;
+			Vars::Colors::MenuTextR = 1.0f; Vars::Colors::MenuTextG = 1.0f; Vars::Colors::MenuTextB = 1.0f; Vars::Colors::MenuTextA = 1.0f;
+			Vars::Colors::MenuAccentR = 0.0f; Vars::Colors::MenuAccentG = 0.86274f; Vars::Colors::MenuAccentB = 0.0f; Vars::Colors::MenuAccentA = 1.0f;
+			Vars::Colors::WindowColorR = 0.0f; Vars::Colors::WindowColorG = 0.86274f; Vars::Colors::WindowColorB = 0.0f; Vars::Colors::WindowColorA = 1.0f;
+			Vars::Colors::AimbotFOVR = 1.0f; Vars::Colors::AimbotFOVG = 1.0f; Vars::Colors::AimbotFOVB = 1.0f; Vars::Colors::AimbotFOVA = 0.4f;
 			
 			// Apply defaults
 			style.Colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
 			style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-			style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 1.0f);
-			style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 1.0f);
-			style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 1.0f);
-			style.Colors[ImGuiCol_Button] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 0.4f);
-			style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 0.6f);
-			style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 0.8f);
-			style.Colors[ImGuiCol_Header] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 0.4f);
-			style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 0.6f);
-			style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.0f, 220.0f / 255.0f, 0.0f, 0.8f);
+			style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 0.86274f, 0.0f, 1.0f);
+			style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.0f, 0.86274f, 0.0f, 1.0f);
+			style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.0f, 0.86274f, 0.0f, 1.0f);
+			style.Colors[ImGuiCol_Button] = ImVec4(0.0f, 0.86274f, 0.0f, 0.4f);
+			style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.0f, 0.86274f, 0.0f, 0.6f);
+			style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.0f, 0.86274f, 0.0f, 0.8f);
+			style.Colors[ImGuiCol_Header] = ImVec4(0.0f, 0.86274f, 0.0f, 0.4f);
+			style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.0f, 0.86274f, 0.0f, 0.6f);
+			style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.0f, 0.86274f, 0.0f, 0.8f);
 		}
 	}
 	else if (visualsSubTab == 2)
 	{
-		// Misc Settings
-		ImGui::Text("Misc Settings");
+		// Misc Visual Settings (thirdperson, etc.)
+		ImGui::Text("Visual Misc");
 		ImGui::Separator();
 		
-		ImGui::Checkbox("Show Keybind Window", &m_bShowKeybindWindow);
+		ImGui::Checkbox("Show Keybind Window", &Vars::Misc::ShowKeybindWindow);
 		
 		ImGui::Separator();
 		ImGui::Text("Thirdperson");
@@ -737,21 +755,59 @@ void CMenu::DrawPlayersTab()
 
 void CMenu::DrawMiscTab()
 {
-	ImGui::Text("Thirdperson");
+	static int miscSubTab = 0; // 0 = Movement, 1 = Chat
+	
+	// Subcategory buttons
+	if (ImGui::Button("Movement", ImVec2(100, 30)))
+		miscSubTab = 0;
+	ImGui::SameLine();
+	if (ImGui::Button("Chat", ImVec2(100, 30)))
+		miscSubTab = 1;
+	
 	ImGui::Separator();
+	ImGui::Spacing();
 	
-	ImGui::Checkbox("Enable Thirdperson", &Vars::Misc::Thirdperson);
-	
-	if (Vars::Misc::Thirdperson)
+	if (miscSubTab == 0)
 	{
-		ImGui::SliderFloat("Right/Left", &Vars::Misc::ThirdpersonRight, -200.0f, 200.0f, "%.0f");
-		ImGui::SliderFloat("Up/Down", &Vars::Misc::ThirdpersonUp, -200.0f, 200.0f, "%.0f");
+		// Movement Settings
+		ImGui::Text("Auto Strafe");
+		ImGui::Separator();
 		
-		// Forward/Back slider - allow negative but display as 0 minimum
-		float displayValue = Vars::Misc::ThirdpersonBack + 40.0f; // Offset for display
-		if (ImGui::SliderFloat("Forward/Back", &displayValue, 0.0f, 340.0f, "%.0f"))
+		ImGui::Checkbox("Enable Auto Strafe", &Vars::Misc::AutoStrafe);
+		
+		if (Vars::Misc::AutoStrafe)
 		{
-			Vars::Misc::ThirdpersonBack = displayValue - 40.0f; // Store actual value with offset
+			ImGui::PushItemWidth(200);
+			ImGui::SliderFloat("Turn Rate", &Vars::Misc::AutoStrafeTurnRate, 0.1f, 1.0f, "%.2f");
+			ImGui::SliderFloat("Max Delta", &Vars::Misc::AutoStrafeMaxDelta, 10.0f, 180.0f, "%.0f°");
+			ImGui::PopItemWidth();
+		}
+	}
+	else if (miscSubTab == 1)
+	{
+		// Chat Settings
+		ImGui::Text("Chat Spammer");
+		ImGui::Separator();
+		
+		ImGui::Checkbox("Enable Chat Spammer", &Vars::Misc::ChatSpammer);
+		
+		if (Vars::Misc::ChatSpammer)
+		{
+			ImGui::PushItemWidth(200);
+			ImGui::SliderFloat("Interval", &Vars::Misc::ChatSpammerInterval, 0.1f, 10.0f, "%.1fs");
+			ImGui::PopItemWidth();
+			
+			if (ImGui::Button("Refresh", ImVec2(100, 30)))
+			{
+				F::Chat.RefreshMessages();
+			}
+			
+			ImGui::SameLine();
+			
+			if (ImGui::Button("Open Folder", ImVec2(100, 30)))
+			{
+				ShellExecuteA(NULL, "open", "C:\\necromancer_OF2\\chat", NULL, NULL, SW_SHOWNORMAL);
+			}
 		}
 	}
 }
@@ -1330,8 +1386,8 @@ void CMenu::DrawKeybindWindow()
 	ImVec4 oldTitleBg = style.Colors[ImGuiCol_TitleBg];
 	ImVec4 oldTitleBgActive = style.Colors[ImGuiCol_TitleBgActive];
 	
-	style.Colors[ImGuiCol_TitleBg] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
-	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(m_fWindowColor[0], m_fWindowColor[1], m_fWindowColor[2], m_fWindowColor[3]);
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(Vars::Colors::WindowColorR, Vars::Colors::WindowColorG, Vars::Colors::WindowColorB, Vars::Colors::WindowColorA);
+	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(Vars::Colors::WindowColorR, Vars::Colors::WindowColorG, Vars::Colors::WindowColorB, Vars::Colors::WindowColorA);
 
 	ImGui::Begin("Keybinds", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
 

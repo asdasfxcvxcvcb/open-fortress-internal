@@ -1,6 +1,7 @@
 #include "Entry.h"
 #include "../Features/Menu/Menu.h"
 #include "../Features/Config/Config.h"
+#include "../Features/Chat/Chat.h"
 
 void CGlobal_Entry::Load()
 {
@@ -41,6 +42,7 @@ void CGlobal_Entry::Load()
 	G::Hooks.Initialize();
 	g_Config.LoadConfig();
 	g_Config.LoadPlayerList();
+	F::Chat.Initialize();
 	
 	if (I::Cvar)
 	{

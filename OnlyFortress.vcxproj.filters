@@ -34,7 +34,6 @@
     <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
     <ClCompile Include="Features\Config\Config.cpp" />
     <ClCompile Include="Features\Aimbot\Aimbot.cpp" />
-    <ClCompile Include="Features\Menu\ImGuiMenu.cpp" />
     <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
     <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_OverrideView.cpp" />
@@ -49,6 +48,12 @@
     <ClCompile Include="vendor\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="vendor\imgui\imgui_tables.cpp" />
     <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp" />
+    <ClCompile Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
+    <ClCompile Include="Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
+    <ClCompile Include="Features\Menu\Menu.cpp" />
+    <ClCompile Include="Features\Chat\Chat.cpp" />
+    <ClCompile Include="Features\AutoStrafe\AutoStrafe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util\Util.h" />
@@ -143,7 +148,6 @@
     <ClInclude Include="Features\Nospread\Nospread.h" />
     <ClInclude Include="Features\Config\Config.h" />
     <ClInclude Include="Features\Aimbot\Aimbot.h" />
-    <ClInclude Include="Features\Menu\ImGuiMenu.h" />
     <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
     <ClInclude Include="Util\DirectX\DirectX.h" />
     <ClInclude Include="vendor\imgui\imconfig.h" />
@@ -156,6 +160,12 @@
     <ClInclude Include="vendor\imgui\imstb_truetype.h" />
     <ClInclude Include="SDK\Globals.h" />
     <ClInclude Include="SDK\Interfaces\IClientMode.h" />
+    <ClInclude Include="Features\Aimbot\AimbotHitscan\AimbotHitscan.h" />
+    <ClInclude Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
+    <ClInclude Include="Features\Aimbot\AimbotMelee\AimbotMelee.h" />
+    <ClInclude Include="Features\Menu\Menu.h" />
+    <ClInclude Include="Features\Chat\Chat.h" />
+    <ClInclude Include="Features\AutoStrafe\AutoStrafe.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SDK\Includes\gametrace.h" />

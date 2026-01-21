@@ -168,6 +168,8 @@
     <ClCompile Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
+    <ClCompile Include="Features\AutoStrafe\AutoStrafe.cpp" />
+    <ClCompile Include="Features\Chat\Chat.cpp" />
     <ClCompile Include="Features\Config\Config.cpp" />
     <ClCompile Include="Features\EnginePrediction\EnginePrediction.cpp" />
     <ClCompile Include="Features\ESP\ESP.cpp" />
@@ -220,6 +222,8 @@
     <ClInclude Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
     <ClInclude Include="Features\Aimbot\AimbotMelee\AimbotMelee.h" />
     <ClInclude Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.h" />
+    <ClInclude Include="Features\AutoStrafe\AutoStrafe.h" />
+    <ClInclude Include="Features\Chat\Chat.h" />
     <ClInclude Include="Features\Config\Config.h" />
     <ClInclude Include="Features\EnginePrediction\EnginePrediction.h" />
     <ClInclude Include="Features\ESP\ESP.h" />
