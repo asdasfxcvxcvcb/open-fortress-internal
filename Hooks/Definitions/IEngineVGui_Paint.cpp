@@ -50,6 +50,10 @@ DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 		I::MatSystemSurface->StartDrawing();
 		{
 			H::Draw.UpdateMatrix();
+			
+			// Render ESP using in-game paint if enabled
+			if (Vars::ESP::UseInGameRender)
+				F::ESP.RenderSurface();
 		}
 		I::MatSystemSurface->FinishDrawing();
 	}

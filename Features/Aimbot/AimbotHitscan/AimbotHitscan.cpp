@@ -83,7 +83,18 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 	bestTarget.flFOV = Vars::Aimbot::FOV;
 
 	const Vector vLocalPos = pLocal->GetShootPos();
-	const Vector vForward = U::Math.GetAngleToPosition(vLocalPos, vLocalPos + Vector(1, 0, 0));
+	
+	// Cache weapon check for auto hitbox
+	bool isRailgunOrSniper = false;
+	if (Vars::Aimbot::Hitbox == 2)
+	{
+		auto pWeapon = pLocal->GetActiveWeapon();
+		if (pWeapon)
+		{
+			const char* weaponName = pWeapon->GetName();
+			isRailgunOrSniper = (strstr(weaponName, "railgun") != nullptr || strstr(weaponName, "sniperrifle") != nullptr);
+		}
+	}
 
 	for (int i = 1; i <= I::GlobalVarsBase->maxClients; i++)
 	{
@@ -96,92 +107,104 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 		if (!F::Aimbot.IsValidTarget(pLocal, pPlayer))
 			continue;
 
-		Vector vHitbox;
-		if (!GetHitbox(pPlayer, vHitbox))
+		// Setup bones once
+		matrix3x4_t BoneMatrix[128];
+		if (!pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
 			continue;
 
-		bool bPreferredVisible = IsVisible(pLocal, pPlayer, vHitbox);
-		Vector vPreferredHitbox = vHitbox;
+		const auto pModel = pPlayer->GetModel();
+		if (!pModel)
+			continue;
+
+		const auto pHdr = I::ModelInfoClient->GetStudiomodel(pModel);
+		if (!pHdr)
+			continue;
+
+		const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
+		if (!pSet)
+			continue;
+
+		// Determine hitboxes to check based on mode
+		int primaryHitbox = 3; // Body
+		int secondaryHitbox = 0; // Head
 		
-		Vector vAlternateHitbox;
-		bool bAlternateVisible = false;
-		
-		if (Vars::Aimbot::Hitbox == 2)
+		if (Vars::Aimbot::Hitbox == 0)
 		{
-			matrix3x4_t BoneMatrix[128];
-			if (pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
+			primaryHitbox = 0; // Head only
+			secondaryHitbox = -1;
+		}
+		else if (Vars::Aimbot::Hitbox == 1)
+		{
+			primaryHitbox = 3; // Body only
+			secondaryHitbox = -1;
+		}
+		else if (Vars::Aimbot::Hitbox == 2) // Auto
+		{
+			if (isRailgunOrSniper)
 			{
-				const auto pModel = pPlayer->GetModel();
-				if (pModel)
-				{
-					const auto pHdr = I::ModelInfoClient->GetStudiomodel(pModel);
-					if (pHdr)
-					{
-						const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
-						if (pSet)
-						{
-							int nAlternateHitbox = 3;
-							
-							auto pWeapon = pLocal->GetActiveWeapon();
-							if (pWeapon)
-							{
-								const char* weaponName = pWeapon->GetName();
-								bool isRailgun = (strstr(weaponName, "railgun") != nullptr || strstr(weaponName, "RAILGUN") != nullptr);
-								bool isSniper = (strstr(weaponName, "sniperrifle") != nullptr || strstr(weaponName, "SNIPERRIFLE") != nullptr);
-								
-								if (isRailgun || isSniper)
-									nAlternateHitbox = 3;
-								else
-									nAlternateHitbox = 0;
-							}
-							
-							const auto pBox = pSet->pHitbox(nAlternateHitbox);
-							if (pBox)
-							{
-								Vector vMin, vMax;
-								U::Math.VectorTransform(pBox->bbmin, BoneMatrix[pBox->bone], vMin);
-								U::Math.VectorTransform(pBox->bbmax, BoneMatrix[pBox->bone], vMax);
-								vAlternateHitbox = (vMin + vMax) * 0.5f;
-								
-								bAlternateVisible = IsVisible(pLocal, pPlayer, vAlternateHitbox);
-							}
-						}
-					}
-				}
+				primaryHitbox = 0; // Head first for snipers
+				secondaryHitbox = 3; // Body fallback
+			}
+			else
+			{
+				primaryHitbox = 3; // Body first for others
+				secondaryHitbox = 0; // Head fallback
 			}
 		}
-		
+
+		// Check primary hitbox
+		Vector vPrimaryHitbox;
+		bool bPrimaryValid = false;
+		const auto pPrimaryBox = pSet->pHitbox(primaryHitbox);
+		if (pPrimaryBox)
+		{
+			Vector vMin, vMax;
+			U::Math.VectorTransform(pPrimaryBox->bbmin, BoneMatrix[pPrimaryBox->bone], vMin);
+			U::Math.VectorTransform(pPrimaryBox->bbmax, BoneMatrix[pPrimaryBox->bone], vMax);
+			vPrimaryHitbox = (vMin + vMax) * 0.5f;
+			bPrimaryValid = IsVisible(pLocal, pPlayer, vPrimaryHitbox);
+		}
+
+		// Check secondary hitbox if needed
+		Vector vSecondaryHitbox;
+		bool bSecondaryValid = false;
+		if (!bPrimaryValid && secondaryHitbox >= 0)
+		{
+			const auto pSecondaryBox = pSet->pHitbox(secondaryHitbox);
+			if (pSecondaryBox)
+			{
+				Vector vMin, vMax;
+				U::Math.VectorTransform(pSecondaryBox->bbmin, BoneMatrix[pSecondaryBox->bone], vMin);
+				U::Math.VectorTransform(pSecondaryBox->bbmax, BoneMatrix[pSecondaryBox->bone], vMax);
+				vSecondaryHitbox = (vMin + vMax) * 0.5f;
+				bSecondaryValid = IsVisible(pLocal, pPlayer, vSecondaryHitbox);
+			}
+		}
+
+		// Use whichever hitbox is visible
 		Vector vFinalHitbox;
-		bool bHasValidHitbox = false;
-		
-		if (bPreferredVisible)
-		{
-			vFinalHitbox = vPreferredHitbox;
-			bHasValidHitbox = true;
-		}
-		else if (bAlternateVisible)
-		{
-			vFinalHitbox = vAlternateHitbox;
-			bHasValidHitbox = true;
-		}
-		
-		if (!bHasValidHitbox)
-			continue;
+		if (bPrimaryValid)
+			vFinalHitbox = vPrimaryHitbox;
+		else if (bSecondaryValid)
+			vFinalHitbox = vSecondaryHitbox;
+		else
+			continue; // No visible hitbox
 
 		const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
-		const float flDistance = vLocalPos.DistTo(vFinalHitbox);
-
+		
+		// Early FOV check for FOV-based targeting
 		if (Vars::Aimbot::TargetSelection == 1 && flFOV > Vars::Aimbot::FOV)
 			continue;
 
-		bool bBetter = false;
+		const float flDistance = vLocalPos.DistTo(vFinalHitbox);
 
+		bool bBetter = false;
 		switch (Vars::Aimbot::TargetSelection)
 		{
-		case 0:
+		case 0: // Distance
 			bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
 			break;
-		case 1:
+		case 1: // FOV
 			bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
 			break;
 		}
@@ -206,13 +229,13 @@ void CAimbotHitscan::AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTa
 
 	switch (Vars::Aimbot::Mode)
 	{
-	case 0:
+	case 0: // Plain
 		pCmd->viewangles = vAngle;
 		U::Math.ClampAngles(pCmd->viewangles);
 		I::EngineClient->SetViewAngles(pCmd->viewangles);
 		break;
 
-	case 1:
+	case 1: // Smooth
 	{
 		Vector vDelta = vAngle - pCmd->viewangles;
 		U::Math.ClampAngles(vDelta);
@@ -222,34 +245,15 @@ void CAimbotHitscan::AimAt(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTa
 		break;
 	}
 
-	case 2:
+	case 2: // Silent (no PSilent in TF2, it's the same)
 	{
-		auto pWeapon = pLocal->GetActiveWeapon();
-		if (pWeapon)
-			G::Attacking = SDK::IsAttacking(pLocal, pWeapon, pCmd);
-		
-		if (G::Attacking == 1)
+		// Only aim when actually attacking
+		if (pCmd->buttons & IN_ATTACK)
 		{
 			U::Math.FixMovement(pCmd, vOldAngles, vAngle);
 			pCmd->viewangles = vAngle;
 			U::Math.ClampAngles(pCmd->viewangles);
 			G::bSilentAngles = true;
-		}
-		break;
-	}
-
-	case 3:
-	{
-		auto pWeapon = pLocal->GetActiveWeapon();
-		if (pWeapon)
-			G::Attacking = SDK::IsAttacking(pLocal, pWeapon, pCmd);
-		
-		if (G::Attacking == 1)
-		{
-			U::Math.FixMovement(pCmd, vOldAngles, vAngle);
-			pCmd->viewangles = vAngle;
-			U::Math.ClampAngles(pCmd->viewangles);
-			G::bPSilentAngles = true;
 		}
 		break;
 	}

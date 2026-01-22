@@ -382,8 +382,9 @@ void CMenu::Render()
 			drawList->AddCircle(ImVec2(centerX, centerY), radius, circleColor, 64, 2.0f);
 		}
 
-		// Render ESP through ImGui DrawList
-		F::ESP.Render();
+		// Render ESP through ImGui DrawList (only if not using in-game render)
+		if (!Vars::ESP::UseInGameRender)
+			F::ESP.Render();
 	}
 
 	// Draw keybind window if enabled (in-game OR when menu is open)
@@ -585,6 +586,7 @@ void CMenu::DrawVisualsTab()
 			if (ImGui::CollapsingHeader("Global", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::Checkbox("Enable ESP", &Vars::ESP::Enabled);
+				ImGui::Checkbox("Use In-Game Render (smoother, lower FPS)", &Vars::ESP::UseInGameRender);
 				ImGui::Spacing();
 			}
 			
@@ -612,6 +614,7 @@ void CMenu::DrawVisualsTab()
 				ImGui::Checkbox("Health Bar", &Vars::ESP::PlayerHealthBar);
 				ImGui::Checkbox("Weapons", &Vars::ESP::PlayerWeapons);
 				ImGui::Checkbox("Conditions", &Vars::ESP::PlayerConditions);
+				ImGui::Checkbox("Skeleton", &Vars::ESP::PlayerSkeleton);
 				ImGui::Unindent();
 			}
 		}
@@ -701,6 +704,25 @@ void CMenu::DrawVisualsTab()
 		
 		ImGui::Separator();
 		
+		// ESP Colors
+		ImGui::Text("ESP");
+		ImGui::Checkbox("Use Enemy Colors", &Vars::ESP::UseEnemyColors);
+		ImGui::Spacing();
+		
+		float boxColor[4] = { Vars::Colors::ESPBoxR, Vars::Colors::ESPBoxG, Vars::Colors::ESPBoxB, Vars::Colors::ESPBoxA };
+		if (ImGui::ColorEdit4("Box", boxColor, colorFlags))
+		{
+			Vars::Colors::ESPBoxR = boxColor[0]; Vars::Colors::ESPBoxG = boxColor[1]; Vars::Colors::ESPBoxB = boxColor[2]; Vars::Colors::ESPBoxA = boxColor[3];
+		}
+		
+		float skeletonColor[4] = { Vars::Colors::SkeletonR, Vars::Colors::SkeletonG, Vars::Colors::SkeletonB, Vars::Colors::SkeletonA };
+		if (ImGui::ColorEdit4("Skeleton", skeletonColor, colorFlags))
+		{
+			Vars::Colors::SkeletonR = skeletonColor[0]; Vars::Colors::SkeletonG = skeletonColor[1]; Vars::Colors::SkeletonB = skeletonColor[2]; Vars::Colors::SkeletonA = skeletonColor[3];
+		}
+		
+		ImGui::Separator();
+		
 		// Reset button
 		if (ImGui::Button("Reset to Default", ImVec2(200, 30)))
 		{
@@ -710,6 +732,8 @@ void CMenu::DrawVisualsTab()
 			Vars::Colors::MenuAccentR = 0.0f; Vars::Colors::MenuAccentG = 0.86274f; Vars::Colors::MenuAccentB = 0.0f; Vars::Colors::MenuAccentA = 1.0f;
 			Vars::Colors::WindowColorR = 0.0f; Vars::Colors::WindowColorG = 0.86274f; Vars::Colors::WindowColorB = 0.0f; Vars::Colors::WindowColorA = 1.0f;
 			Vars::Colors::AimbotFOVR = 1.0f; Vars::Colors::AimbotFOVG = 1.0f; Vars::Colors::AimbotFOVB = 1.0f; Vars::Colors::AimbotFOVA = 0.4f;
+			Vars::Colors::ESPBoxR = 1.0f; Vars::Colors::ESPBoxG = 1.0f; Vars::Colors::ESPBoxB = 1.0f; Vars::Colors::ESPBoxA = 1.0f;
+			Vars::Colors::SkeletonR = 1.0f; Vars::Colors::SkeletonG = 1.0f; Vars::Colors::SkeletonB = 1.0f; Vars::Colors::SkeletonA = 1.0f;
 			
 			// Apply defaults
 			style.Colors[ImGuiCol_WindowBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);

@@ -77,16 +77,11 @@ std::string CChat::GetNextMessage()
 
 void CChat::Run()
 {
-	// Check if chat spammer is enabled
-	if (!Vars::Misc::ChatSpammer)
+	// Early exit checks
+	if (!Vars::Misc::ChatSpammer || m_vSpamMessages.empty())
 		return;
 	
-	// Check if we have messages
-	if (m_vSpamMessages.empty())
-		return;
-	
-	// Check if engine is available and connected
-	if (!I::EngineClient || !I::EngineClient->IsConnected() || !I::EngineClient->IsInGame())
+	if (!I::EngineClient || !I::EngineClient->IsInGame())
 		return;
 	
 	// Check if enough time has passed

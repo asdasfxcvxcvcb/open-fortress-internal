@@ -119,6 +119,11 @@ void CUtil_Math::ClampAngles(Vector& v)
 void CUtil_Math::RotateTriangle(Vector2D* v, const float flRotation)
 {
 	const Vector2D vCenter = (v[0] + v[1] + v[2]) / 3.0f;
+	
+	// Calculate sin/cos once outside the loop
+	const float r = DEG2RADF(flRotation);
+	const float c = ::cosf(r);
+	const float s = ::sinf(r);
 
 	for (int n = 0; n < 3; n++)
 	{
@@ -126,10 +131,6 @@ void CUtil_Math::RotateTriangle(Vector2D* v, const float flRotation)
 
 		const float flX = v[n].x;
 		const float flY = v[n].y;
-
-		const float r = DEG2RADF(flRotation);
-		const float c = ::cosf(r);
-		const float s = ::sinf(r);
 
 		v[n].x = (flX * c) - (flY * s);
 		v[n].y = (flX * s) + (flY * c);
@@ -176,9 +177,17 @@ float CUtil_Math::GetFovBetween(const Vector vSrc, const Vector vDst)
 	Vector v_dst = { };
 	AngleVectors(vDst, &v_dst);
 
-	float result = RAD2DEG(::acosf(v_dst.Dot(v_src) / v_dst.LenghtSqr()));
+	// Dot product of normalized vectors gives cos(angle)
+	float dotProduct = v_dst.Dot(v_src);
+	float lengthProduct = v_dst.Lenght2D() * v_src.Lenght2D();
+	
+	// Clamp to avoid acos domain errors
+	float cosAngle = dotProduct / lengthProduct;
+	cosAngle = Max(-1.0f, Min(1.0f, cosAngle));
+	
+	float result = RAD2DEG(::acosf(cosAngle));
 
-	if (!isfinite(result) || isinf(result) || isnan(result))
+	if (!isfinite(result))
 		result = FLT_MAX;
 
 	return result;

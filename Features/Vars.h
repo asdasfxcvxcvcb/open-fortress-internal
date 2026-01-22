@@ -104,6 +104,7 @@ namespace Vars
 	namespace ESP
 	{
 		REGISTER_VAR(ESP, bool, Enabled, true)
+		REGISTER_VAR(ESP, bool, UseInGameRender, false)
 		
 		// Player ESP
 		REGISTER_VAR(ESP, bool, Players, true)
@@ -113,6 +114,7 @@ namespace Vars
 		REGISTER_VAR(ESP, bool, PlayerHealthBar, true)
 		REGISTER_VAR(ESP, bool, PlayerWeapons, true)
 		REGISTER_VAR(ESP, bool, PlayerConditions, true)
+		REGISTER_VAR(ESP, bool, PlayerSkeleton, false)
 		
 		// Player Filters
 		REGISTER_VAR(ESP, bool, IgnoreLocal, false)
@@ -127,6 +129,9 @@ namespace Vars
 		REGISTER_VAR(ESP, bool, Health, true)
 		REGISTER_VAR(ESP, bool, Weapons, true)
 		REGISTER_VAR(ESP, bool, Powerups, true)
+		
+		// Color Options
+		REGISTER_VAR(ESP, bool, UseEnemyColors, true)
 	}
 
 	namespace Misc
@@ -169,6 +174,16 @@ namespace Vars
 		REGISTER_VAR(Colors, float, AimbotFOVG, 1.0f)
 		REGISTER_VAR(Colors, float, AimbotFOVB, 1.0f)
 		REGISTER_VAR(Colors, float, AimbotFOVA, 0.4f)
+		
+		REGISTER_VAR(Colors, float, ESPBoxR, 1.0f)
+		REGISTER_VAR(Colors, float, ESPBoxG, 1.0f)
+		REGISTER_VAR(Colors, float, ESPBoxB, 1.0f)
+		REGISTER_VAR(Colors, float, ESPBoxA, 1.0f)
+		
+		REGISTER_VAR(Colors, float, SkeletonR, 1.0f)
+		REGISTER_VAR(Colors, float, SkeletonG, 1.0f)
+		REGISTER_VAR(Colors, float, SkeletonB, 1.0f)
+		REGISTER_VAR(Colors, float, SkeletonA, 1.0f)
 	}
 	
 	// Custom friends list (Steam IDs)
