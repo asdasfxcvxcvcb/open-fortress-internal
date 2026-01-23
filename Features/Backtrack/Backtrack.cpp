@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <string>
 
+// Minimal interface for GetLatency
 class INetChannelInfo
 {
 public:
@@ -36,33 +37,6 @@ public:
 	virtual float GetTimeoutSeconds(void) const = 0;
 };
 
-class INetChannel : public INetChannelInfo
-{
-public:
-	virtual ~INetChannel(void) {};
-	virtual void SetDataRate(float rate) = 0;
-	virtual bool IsInQueue(void) const = 0;
-	virtual void PacketStart(int incoming_sequence, int outgoing_acknowledged) = 0;
-	virtual void PacketEnd(void) = 0;
-	virtual bool ProcessPacket(struct netpacket_s* packet, bool bHasHeader) = 0;
-	virtual bool SendNetMsg(void* &msg, bool bForceReliable = false, bool bVoice = false) = 0;
-	virtual bool SendData(void* &buffer, bool bReliable = true) = 0;
-	virtual bool SendFile(const char* filename, unsigned int transferID) = 0;
-	virtual void DenyFile(const char* filename, unsigned int transferID) = 0;
-	virtual void RequestFile_OLD(const char* filename, unsigned int transferID) = 0;
-	virtual void SetChoked(void) = 0;
-	virtual int SendDatagram(void* &data) = 0;
-	virtual bool Transmit(bool onlyReliable = false) = 0;
-
-	char __pad00[24];
-	int m_nOutSequenceNr;
-	int m_nInSequenceNr;
-	int m_nOutSequenceNrAck;
-	int m_nOutReliableState;
-	int m_nInReliableState;
-	int m_nChokedPackets;
-};
-
 // Helper macros if not defined
 #ifndef FLOW_OUTGOING
 #define FLOW_OUTGOING 0
@@ -78,20 +52,6 @@ void CBacktrack::Update()
 {
 	m_UpdateCount++;
 	m_DebugStrings.clear();
-
-	// Update sequence data for ping manipulation
-	INetChannel* pNetChan = reinterpret_cast<INetChannel*>(I::EngineClient->GetNetChannelInfo());
-	if (pNetChan)
-	{
-		if (pNetChan->m_nInSequenceNr > m_iLastInSequence)
-		{
-			m_iLastInSequence = pNetChan->m_nInSequenceNr;
-			m_dSequences.emplace_front(pNetChan->m_nInReliableState, pNetChan->m_nInSequenceNr, I::GlobalVars->realtime);
-		}
-
-		if (m_dSequences.size() > 67)
-			m_dSequences.pop_back();
-	}
 
 	if (!Vars::Backtrack::Enabled)
 	{
@@ -196,7 +156,7 @@ void CBacktrack::Update()
 		while (!m_Records[pPlayer].empty())
 		{
 			auto& last = m_Records[pPlayer].back();
-			if (!IsTickValid(last.flSimulationTime, I::GlobalVars->curtime)) // Check against curtime, logic inside IsTickValid handles the rest
+			if (!IsTickValid(last.flSimulationTime, I::GlobalVars->curtime))
 				m_Records[pPlayer].pop_back();
 			else
 				break;
@@ -243,8 +203,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 		}
 	}
 
-	// If we found a record very close to crosshair, backtrack to it
-	if (nBestTick != -1 && flBestFOV < 5.0f) // 5 degrees tolerance
+	if (nBestTick != -1 && flBestFOV < 5.0f)
 	{
 		pCmd->tick_count = nBestTick;
 	}
@@ -292,84 +251,20 @@ float CBacktrack::GetReal(int iFlow, bool bNoFake)
 		return 0.f;
 
 	if (iFlow != MAX_FLOWS)
-		return pNetChan->GetLatency(iFlow) - (bNoFake && iFlow == FLOW_INCOMING ? GetFakeLatency() : 0.f);
-	return pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING) - (bNoFake ? GetFakeLatency() : 0.f);
-}
-
-float CBacktrack::GetWishFake()
-{
-	return std::clamp(Vars::Backtrack::Latency.Value / 1000.f, 0.f, m_flMaxUnlag);
-}
-
-float CBacktrack::GetWishLerp()
-{
-	return std::clamp(Vars::Backtrack::Interp.Value / 1000.f, GetLerp(), m_flMaxUnlag);
-}
-
-float CBacktrack::GetFakeLatency()
-{
-	return m_flFakeLatency;
+		return pNetChan->GetLatency(iFlow);
+		
+	return pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING);
 }
 
 float CBacktrack::GetFakeInterp()
 {
-	return m_flFakeInterp;
+	// We are not using fake interp
+	return 0.0f;
 }
 
 float CBacktrack::GetWindow()
 {
 	return Vars::Backtrack::Window.Value / 1000.f;
-}
-
-int CBacktrack::GetAnticipatedChoke()
-{
-	return 0;
-}
-
-void CBacktrack::AdjustPing(INetChannel* pNetChan)
-{
-	m_nOldInSequenceNr = pNetChan->m_nInSequenceNr;
-	m_nOldInReliableState = pNetChan->m_nInReliableState;
-
-	if (!Vars::Backtrack::Latency.Value)
-		return;
-
-	auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer());
-	if (!pLocal)
-		return;
-	
-	float flTimescale = 1.0f; 
-
-	static float flStaticReal = 0.f;
-	float flFake = GetWishFake();
-	float flReal = GetReal(MAX_FLOWS, true); 
-
-	flStaticReal += (flReal + 5 * TICK_INTERVAL - flStaticReal) * 0.1f;
-
-	int nInReliableState = pNetChan->m_nInReliableState;
-	int nInSequenceNr = pNetChan->m_nInSequenceNr;
-	float flLatency = 0.f;
-
-	for (auto& cSequence : m_dSequences)
-	{
-		nInReliableState = cSequence.m_nInReliableState;
-		nInSequenceNr = cSequence.m_nSequenceNr;
-		flLatency = (I::GlobalVars->realtime - cSequence.m_flTime) * flTimescale - TICK_INTERVAL;
-
-		if (flLatency > flFake || m_nLastInSequenceNr >= cSequence.m_nSequenceNr || flLatency > m_flMaxUnlag - flStaticReal)
-			break;
-	}
-	
-	pNetChan->m_nInReliableState = nInReliableState;
-	pNetChan->m_nInSequenceNr = nInSequenceNr;
-
-	m_nLastInSequenceNr = pNetChan->m_nInSequenceNr;
-}
-
-void CBacktrack::RestorePing(INetChannel* pNetChan)
-{
-	pNetChan->m_nInSequenceNr = m_nOldInSequenceNr;
-	pNetChan->m_nInReliableState = m_nOldInReliableState;
 }
 
 void CBacktrack::DebugDraw()
