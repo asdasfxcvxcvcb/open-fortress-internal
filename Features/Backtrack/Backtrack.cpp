@@ -2,6 +2,7 @@
 #include "../Vars.h"
 #include "../../Util/Math/Math.h"
 #include "../../SDK/Interfaces/IVEngineClient.h"
+#include "../../SDK/Includes/client_class.h"
 #include <algorithm>
 #include <string>
 
@@ -156,7 +157,7 @@ void CBacktrack::Update()
 		while (!m_Records[pPlayer].empty())
 		{
 			auto& last = m_Records[pPlayer].back();
-			if (!IsTickValid(last.flSimulationTime, I::GlobalVars->curtime))
+			if (!IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime))
 				m_Records[pPlayer].pop_back();
 			else
 				break;
@@ -176,7 +177,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 	if (!pLocal) return;
 
 	Vector vViewAngles = pCmd->viewangles;
-	Vector vEyePos = pLocal->GetEyePosition();
+	Vector vEyePos = pLocal->GetShootPos();
 
 	float flBestFOV = 255.0f;
 	int nBestTick = -1;
@@ -187,7 +188,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 
 		for (const auto& record : records)
 		{
-			if (!IsTickValid(record.flSimulationTime, I::GlobalVars->curtime))
+			if (!IsTickValid(record.flSimulationTime, I::GlobalVarsBase->curtime))
 				continue;
 
 			// Check hitboxes
@@ -283,8 +284,8 @@ void CBacktrack::DebugDraw()
 		if (!records.empty())
 		{
 			const auto& last = records.back();
-			bool valid = IsTickValid(last.flSimulationTime, I::GlobalVars->curtime);
-			float delta = I::GlobalVars->curtime - last.flSimulationTime;
+			bool valid = IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime);
+			float delta = I::GlobalVarsBase->curtime - last.flSimulationTime;
 			H::Draw.String(EFonts::DEBUG, 20, y, valid ? Color(0, 255, 0, 255) : Color(255, 0, 0, 255), TXT_DEFAULT, 
 				"Player %d: %d records | Age: %.3f", player->entindex(), records.size(), delta); 
 			y += 15;
