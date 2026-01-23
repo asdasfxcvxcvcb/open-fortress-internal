@@ -147,6 +147,15 @@ namespace Vars
 		REGISTER_VAR(Misc, float, AutoStrafeTurnRate, 0.5f)
 		REGISTER_VAR(Misc, float, AutoStrafeMaxDelta, 90.0f)
 	}
+
+	namespace Backtrack
+	{
+		REGISTER_VAR(Backtrack, bool, Enabled, false)
+		REGISTER_VAR(Backtrack, bool, DrawSkeleton, false)
+		REGISTER_VAR(Backtrack, float, Window, 200.0f)
+		REGISTER_VAR(Backtrack, float, Latency, 0.0f)
+		REGISTER_VAR(Backtrack, float, Interp, 0.0f)
+	}
 	
 	namespace Colors
 	{
