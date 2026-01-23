@@ -44,7 +44,14 @@ public:
 namespace I { inline CGlobalVarsBase* GlobalVarsBase = nullptr; }
 
 #define TICK_INTERVAL			(I::GlobalVarsBase->interval_per_tick)
+
+#ifndef TIME_TO_TICKS
 #define TIME_TO_TICKS( dt )		( static_cast<int>( 0.5f + static_cast<float>(dt) / TICK_INTERVAL ) )
+#endif
+
+#ifndef TICKS_TO_TIME
 #define TICKS_TO_TIME( t )		( TICK_INTERVAL * ( t ) )
+#endif
+
 #define ROUND_TO_TICKS( t )		( TICK_INTERVAL * TIME_TO_TICKS( t ) )
 #define TICK_NEVER_THINK		(-1)
