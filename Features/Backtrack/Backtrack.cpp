@@ -265,7 +265,7 @@ float CBacktrack::GetFakeInterp()
 
 float CBacktrack::GetWindow()
 {
-	return Vars::Backtrack::Window.Value / 1000.f;
+	return Vars::Backtrack::Window / 1000.f;
 }
 
 void CBacktrack::DebugDraw()
