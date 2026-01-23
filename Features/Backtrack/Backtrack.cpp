@@ -1,8 +1,67 @@
 #include "Backtrack.h"
 #include "../Vars.h"
 #include "../../Util/Math/Math.h"
+#include "../../SDK/Interfaces/IVEngineClient.h"
 #include <algorithm>
 #include <string>
+
+class INetChannelInfo
+{
+public:
+	virtual const char* GetName(void) const = 0;
+	virtual const char* GetAddress(void) const = 0;
+	virtual float GetTime(void) const = 0;
+	virtual float GetTimeConnected(void) const = 0;
+	virtual int GetBufferSize(void) const = 0;
+	virtual int GetDataRate(void) const = 0;
+	virtual bool IsLoopback(void) const = 0;
+	virtual bool IsTimingOut(void) const = 0;
+	virtual bool IsPlayback(void) const = 0;
+	virtual float GetLatency(int flow) const = 0;
+	virtual float GetAvgLatency(int flow) const = 0;
+	virtual float GetAvgLoss(int flow) const = 0;
+	virtual float GetAvgChoke(int flow) const = 0;
+	virtual float GetAvgData(int flow) const = 0;
+	virtual float GetAvgPackets(int flow) const = 0;
+	virtual int GetTotalData(int flow) const = 0;
+	virtual int GetSequenceNr(int flow) const = 0;
+	virtual bool IsValidPacket(int flow, int frame_number) const = 0;
+	virtual float GetPacketTime(int flow, int frame_number) const = 0;
+	virtual int GetPacketBytes(int flow, int frame_number, int group) const = 0;
+	virtual bool GetStreamProgress(int flow, int* received, int* total) const = 0;
+	virtual float GetTimeSinceLastReceived(void) const = 0;
+	virtual float GetCommandInterpolationAmount(int flow, int frame_number) const = 0;
+	virtual void GetPacketResponseLatency(int flow, int frame_number, int* pnLatencyMsecs, int* pnChoke) const = 0;
+	virtual void GetRemoteFramerate(float* pflFrameTime, float* pflFrameTimeStdDeviation) const = 0;
+	virtual float GetTimeoutSeconds(void) const = 0;
+};
+
+class INetChannel : public INetChannelInfo
+{
+public:
+	virtual ~INetChannel(void) {};
+	virtual void SetDataRate(float rate) = 0;
+	virtual bool IsInQueue(void) const = 0;
+	virtual void PacketStart(int incoming_sequence, int outgoing_acknowledged) = 0;
+	virtual void PacketEnd(void) = 0;
+	virtual bool ProcessPacket(struct netpacket_s* packet, bool bHasHeader) = 0;
+	virtual bool SendNetMsg(void* &msg, bool bForceReliable = false, bool bVoice = false) = 0;
+	virtual bool SendData(void* &buffer, bool bReliable = true) = 0;
+	virtual bool SendFile(const char* filename, unsigned int transferID) = 0;
+	virtual void DenyFile(const char* filename, unsigned int transferID) = 0;
+	virtual void RequestFile_OLD(const char* filename, unsigned int transferID) = 0;
+	virtual void SetChoked(void) = 0;
+	virtual int SendDatagram(void* &data) = 0;
+	virtual bool Transmit(bool onlyReliable = false) = 0;
+
+	char __pad00[24];
+	int m_nOutSequenceNr;
+	int m_nInSequenceNr;
+	int m_nOutSequenceNrAck;
+	int m_nOutReliableState;
+	int m_nInReliableState;
+	int m_nChokedPackets;
+};
 
 // Helper macros if not defined
 #ifndef FLOW_OUTGOING
@@ -21,7 +80,7 @@ void CBacktrack::Update()
 	m_DebugStrings.clear();
 
 	// Update sequence data for ping manipulation
-	CNetChannel* pNetChan = I::EngineClient->GetNetChannelInfo();
+	INetChannel* pNetChan = reinterpret_cast<INetChannel*>(I::EngineClient->GetNetChannelInfo());
 	if (pNetChan)
 	{
 		if (pNetChan->m_nInSequenceNr > m_iLastInSequence)
@@ -153,11 +212,6 @@ void CBacktrack::Run(CUserCmd* pCmd)
 	if (!(pCmd->buttons & IN_ATTACK))
 		return;
 
-	// Simple check: if aimbot is running and has a target, we assume it set the tick count.
-	// But if aimbot is "Legit" or disabled, we need to handle manual shots.
-	// For now, always try to find a backtracking target if one hasn't been set?
-	// The safest bet is: if we find a record under crosshair, use it.
-
 	C_TFPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TFPlayer*>();
 	if (!pLocal) return;
 
@@ -198,7 +252,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 
 bool CBacktrack::IsTickValid(float flSimTime, float flCurTime)
 {
-	CNetChannel* pNetChan = I::EngineClient->GetNetChannelInfo();
+	INetChannelInfo* pNetChan = reinterpret_cast<INetChannelInfo*>(I::EngineClient->GetNetChannelInfo());
 	if (!pNetChan)
 		return false;
 
@@ -233,7 +287,7 @@ float CBacktrack::GetLerp()
 
 float CBacktrack::GetReal(int iFlow, bool bNoFake)
 {
-	auto pNetChan = I::EngineClient->GetNetChannelInfo();
+	INetChannelInfo* pNetChan = reinterpret_cast<INetChannelInfo*>(I::EngineClient->GetNetChannelInfo());
 	if (!pNetChan)
 		return 0.f;
 
@@ -269,11 +323,10 @@ float CBacktrack::GetWindow()
 
 int CBacktrack::GetAnticipatedChoke()
 {
-	// Simplified version
 	return 0;
 }
 
-void CBacktrack::AdjustPing(CNetChannel* pNetChan)
+void CBacktrack::AdjustPing(INetChannel* pNetChan)
 {
 	m_nOldInSequenceNr = pNetChan->m_nInSequenceNr;
 	m_nOldInReliableState = pNetChan->m_nInReliableState;
@@ -285,12 +338,10 @@ void CBacktrack::AdjustPing(CNetChannel* pNetChan)
 	if (!pLocal)
 		return;
 	
-	// Assuming 1.0f timescale
 	float flTimescale = 1.0f; 
 
 	static float flStaticReal = 0.f;
 	float flFake = GetWishFake();
-	// Approximating tickbase delta... simplifed for now
 	float flReal = GetReal(MAX_FLOWS, true); 
 
 	flStaticReal += (flReal + 5 * TICK_INTERVAL - flStaticReal) * 0.1f;
@@ -315,7 +366,7 @@ void CBacktrack::AdjustPing(CNetChannel* pNetChan)
 	m_nLastInSequenceNr = pNetChan->m_nInSequenceNr;
 }
 
-void CBacktrack::RestorePing(CNetChannel* pNetChan)
+void CBacktrack::RestorePing(INetChannel* pNetChan)
 {
 	pNetChan->m_nInSequenceNr = m_nOldInSequenceNr;
 	pNetChan->m_nInReliableState = m_nOldInReliableState;

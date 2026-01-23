@@ -27,6 +27,10 @@ struct BacktrackRecord
 	std::vector<HitboxData> Hitboxes;
 };
 
+class C_TFPlayer;
+class INetChannel;
+class CUserCmd;
+
 class CBacktrack
 {
 public:
@@ -46,8 +50,8 @@ public:
 	float GetWindow();
 	int GetAnticipatedChoke();
 
-	void AdjustPing(CNetChannel* pNetChan);
-	void RestorePing(CNetChannel* pNetChan);
+	void AdjustPing(INetChannel* pNetChan);
+	void RestorePing(INetChannel* pNetChan);
 
 private:
 	std::map<C_TFPlayer*, std::deque<BacktrackRecord>> m_Records;
@@ -58,6 +62,7 @@ private:
 	float m_flFakeLatency = 0.f;
 	float m_flSentInterp = 0.f;
 	float m_flMaxUnlag = 1.0f;
+	float m_flFakeInterp = 0.f;
 	int m_nOldInSequenceNr = 0;
 	int m_nOldInReliableState = 0;
 	int m_nOldTickBase = 0;
