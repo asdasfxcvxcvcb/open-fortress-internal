@@ -20,7 +20,6 @@
     <ClCompile Include="Hooks\Hooks.cpp" />
     <ClCompile Include="SDK\Helpers\Helpers.cpp" />
     <ClCompile Include="SDK\Helpers\DrawManager\DrawManager.cpp" />
-    <ClCompile Include="Features\ESP\ESP.cpp" />
     <ClCompile Include="Hooks\Definitions\IEngineVGui_Paint.cpp" />
     <ClCompile Include="Entry\Entry.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_CreateMove.cpp" />
@@ -28,14 +27,8 @@
     <ClCompile Include="SDK\Includes\usercmd.cpp" />
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_FrameStageNotify.cpp" />
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_LevelShutdown.cpp" />
-    <ClCompile Include="Features\EnginePrediction\EnginePrediction.cpp" />
     <ClCompile Include="Hooks\Definitions\CPrediction_RunCommand.cpp" />
     <ClCompile Include="Hooks\Definitions\IBaseClientDLL_LevelInitPostEntity.cpp" />
-    <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
-    <ClCompile Include="Features\Config\Config.cpp" />
-    <ClCompile Include="Features\Aimbot\Aimbot.cpp" />
-    <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
-    <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_OverrideView.cpp" />
     <ClCompile Include="Hooks\Definitions\DirectX9_EndScene.cpp" />
     <ClCompile Include="Hooks\Definitions\DirectX9_Reset.cpp" />
@@ -49,11 +42,19 @@
     <ClCompile Include="vendor\imgui\imgui_tables.cpp" />
     <ClCompile Include="vendor\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotHitscan\AimbotHitscan.cpp" />
-    <ClCompile Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
     <ClCompile Include="Features\Aimbot\AimbotMelee\AimbotMelee.cpp" />
-    <ClCompile Include="Features\Menu\Menu.cpp" />
-    <ClCompile Include="Features\Chat\Chat.cpp" />
+    <ClCompile Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.cpp" />
+    <ClCompile Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.cpp" />
+    <ClCompile Include="Features\Aimbot\Aimbot.cpp" />
     <ClCompile Include="Features\AutoStrafe\AutoStrafe.cpp" />
+    <ClCompile Include="Features\Backtrack\Backtrack.cpp" />
+    <ClCompile Include="Features\Chat\Chat.cpp" />
+    <ClCompile Include="Features\Config\Config.cpp" />
+    <ClCompile Include="Features\EnginePrediction\EnginePrediction.cpp" />
+    <ClCompile Include="Features\ESP\ESP.cpp" />
+    <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
+    <ClCompile Include="Features\Menu\Menu.cpp" />
+    <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util\Util.h" />
@@ -120,8 +121,6 @@
     <ClInclude Include="Hooks\Hooks.h" />
     <ClInclude Include="SDK\Helpers\Helpers.h" />
     <ClInclude Include="SDK\Helpers\DrawManager\DrawManager.h" />
-    <ClInclude Include="Features\Vars.h" />
-    <ClInclude Include="Features\ESP\ESP.h" />
     <ClInclude Include="Entry\Entry.h" />
     <ClInclude Include="SDK\Entities\C_BaseAnimating.h" />
     <ClInclude Include="SDK\Entities\C_BaseAnimatingOverlay.h" />
@@ -139,16 +138,11 @@
     <ClInclude Include="SDK\Includes\bspflags.h" />
     <ClInclude Include="SDK\Includes\studio.h" />
     <ClInclude Include="SDK\Interfaces\IVModelInfoClient.h" />
-    <ClInclude Include="Features\EnginePrediction\EnginePrediction.h" />
     <ClInclude Include="SDK\Interfaces\IPrediction.h" />
     <ClInclude Include="SDK\Interfaces\GameMovement.h" />
     <ClInclude Include="SDK\Interfaces\IMoveHelper.h" />
     <ClInclude Include="SDK\Entities\C_WeaponSpawner.h" />
-    <ClInclude Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.h" />
     <ClInclude Include="Features\Nospread\Nospread.h" />
-    <ClInclude Include="Features\Config\Config.h" />
-    <ClInclude Include="Features\Aimbot\Aimbot.h" />
-    <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
     <ClInclude Include="Util\DirectX\DirectX.h" />
     <ClInclude Include="vendor\imgui\imconfig.h" />
     <ClInclude Include="vendor\imgui\imgui.h" />
@@ -160,13 +154,22 @@
     <ClInclude Include="vendor\imgui\imstb_truetype.h" />
     <ClInclude Include="SDK\Globals.h" />
     <ClInclude Include="SDK\Interfaces\IClientMode.h" />
-    <ClInclude Include="Features\Aimbot\AimbotHitscan\AimbotHitscan.h" />
-    <ClInclude Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
-    <ClInclude Include="Features\Aimbot\AimbotMelee\AimbotMelee.h" />
-    <ClInclude Include="Features\Menu\Menu.h" />
-    <ClInclude Include="Features\Chat\Chat.h" />
-    <ClInclude Include="Features\AutoStrafe\AutoStrafe.h" />
     <ClInclude Include="SDK\Helpers.h" />
+    <ClInclude Include="Features\LagRecords\LagRecords.h" />
+    <ClInclude Include="Features\Aimbot\AimbotHitscan\AimbotHitscan.h" />
+    <ClInclude Include="Features\Aimbot\AimbotMelee\AimbotMelee.h" />
+    <ClInclude Include="Features\Aimbot\AimbotProjectile\MovementSimulation\MovementSimulation.h" />
+    <ClInclude Include="Features\Aimbot\AimbotProjectile\AimbotProjectile.h" />
+    <ClInclude Include="Features\Aimbot\Aimbot.h" />
+    <ClInclude Include="Features\AutoStrafe\AutoStrafe.h" />
+    <ClInclude Include="Features\Chat\Chat.h" />
+    <ClInclude Include="Features\Config\Config.h" />
+    <ClInclude Include="Features\EnginePrediction\EnginePrediction.h" />
+    <ClInclude Include="Features\ESP\ESP.h" />
+    <ClInclude Include="Features\Menu\Menu.h" />
+    <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
+    <ClInclude Include="Features\Vars.h" />
+    <ClInclude Include="Features\Backtrack\Backtrack.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SDK\Includes\gametrace.h" />

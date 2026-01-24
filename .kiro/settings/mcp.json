@@ -23,7 +23,9 @@
         "xrefs_to",
         "py_eval",
         "disasm",
-        "disasm"
+        "disasm",
+        "find_bytes",
+        "imports"
       ]
     }
   }

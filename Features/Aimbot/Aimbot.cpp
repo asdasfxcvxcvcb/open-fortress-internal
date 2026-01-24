@@ -136,15 +136,62 @@ bool CAimbot::IsValidTarget(C_TFPlayer* pLocal, C_TFPlayer* pEntity)
 	return true;
 }
 
+void CAimbot::CalculateFOVRadius(C_TFPlayer* pLocal)
+{
+	if (!pLocal) return;
+
+	float viewFov = static_cast<float>(pLocal->m_iFOV());
+	if (viewFov == 0.0f) viewFov = static_cast<float>(pLocal->m_iDefaultFOV());
+	if (viewFov == 0.0f) viewFov = 90.0f;
+
+	float viewFovRadians = (viewFov * 3.14159f) / 180.0f;
+	float aimFovRadians = (Vars::Aimbot::FOV * 3.14159f) / 180.0f;
+
+	// Calculate radius using Screen Width (Robust method)
+	// Radius = tan(AimFOV) / tan(ViewFOV / 2) * (ScreenWidth / 2)
+	m_nFOVRadius = static_cast<int>((H::Draw.m_nScreenW / 2.0f) * (tanf(aimFovRadians) / tanf(viewFovRadians / 2.0f)));
+}
+
+bool CAimbot::ShouldIgnore(C_TFPlayer* pLocal, CUserCmd* pCmd, const Vector& vTargetPos)
+{
+	if (!pLocal) return true;
+
+	// Ensure radius is up to date
+	CalculateFOVRadius(pLocal);
+
+	// Project target to screen
+	Vector2D vScreen;
+	if (!H::Draw.WorldPosToScreenPos(vTargetPos, vScreen))
+		return true; // Target is off-screen (behind us), so definitely ignore
+
+	// Calculate 2D distance from screen center
+	float centerX = H::Draw.m_nScreenW / 2.0f;
+	float centerY = H::Draw.m_nScreenH / 2.0f;
+	
+	float dx = vScreen.x - centerX;
+	float dy = vScreen.y - centerY;
+	float dist = sqrtf(dx * dx + dy * dy);
+
+	// Check against calculated pixel radius
+	if (dist > m_nFOVRadius)
+		return true;
+
+	return false;
+}
+
 void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 {
 	SetAiming(false);
+	G::bAimbotActive = false;
 	
 	if (!Vars::Aimbot::Enabled)
 		return;
 
 	if (!pLocal || !pLocal->IsAlive())
 		return;
+
+	// Pre-calculate FOV radius for this frame
+	CalculateFOVRadius(pLocal);
 
 	C_BaseCombatWeapon* pWeapon = pLocal->GetActiveWeapon();
 	EWeaponType weaponType = GetWeaponType(pWeapon);
@@ -169,16 +216,16 @@ void CAimbot::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 	}
 }
 
-void CAimbot::DrawFOV()
+void CAimbot::DrawFOV(C_TFPlayer* pLocal)
 {
 	if (!Vars::Aimbot::Enabled || !Vars::Aimbot::DrawFOV || Vars::Aimbot::TargetSelection != 1)
 		return;
 
+	// Ensure updated radius
+	CalculateFOVRadius(pLocal);
+
 	int centerX = H::Draw.m_nScreenW / 2;
 	int centerY = H::Draw.m_nScreenH / 2;
 
-	float fovRadians = (Vars::Aimbot::FOV * 3.14159f) / 180.0f;
-	int radius = static_cast<int>((H::Draw.m_nScreenH / 2.0f) * tanf(fovRadians / 2.0f));
-
-	H::Draw.OutlinedCircle(centerX, centerY, radius, 64, Color(255, 255, 255, 100));
+	H::Draw.OutlinedCircle(centerX, centerY, m_nFOVRadius, 64, Color(255, 255, 255, 100));
 }

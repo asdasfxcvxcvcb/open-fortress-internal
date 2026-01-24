@@ -1,5 +1,7 @@
 /SEOwnedDE
 /Release
+examples
+/examples
 /OnlyFortess
 *.ipch
 *.db-wal
@@ -58,3 +60,13 @@ OnlyFortress/Release/necromancer.dll.recipe
 .vs/OnlyFortress/FileContentIndex/ba4d9b2a-c594-4d5c-8acf-953ddbead4a1.vsidx
 .vs/OnlyFortress/FileContentIndex/d6f53884-cd4d-4bba-a407-dd127dc3fdcd.vsidx
 GEMINI.md
+.gemini/config.json
+.gemini/mcp.json
+.gemini/settings.json.backup
+.gemini/settings/mcp.json
+.kiro/settings/mcp.json
+.vs/OnlyFortress/FileContentIndex/128973ad-c219-4daf-a4fe-ac5c5c699786.vsidx
+.vs/OnlyFortress/FileContentIndex/844ec253-ba3d-40ca-90b2-f9e54923fec6.vsidx
+.vs/OnlyFortress/FileContentIndex/9bfa69a2-9d7e-4798-b202-cca702c46a19.vsidx
+.vs/OnlyFortress/FileContentIndex/a024e554-925f-49b4-91a2-a193150b5f4e.vsidx
+.vs/OnlyFortress/FileContentIndex/b703abe6-98dc-4f66-bf08-55c73c49ee80.vsidx

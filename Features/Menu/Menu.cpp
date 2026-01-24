@@ -366,14 +366,24 @@ void CMenu::Render()
 		// Draw FOV circle using ImGui DrawList (DirectX rendering) - only for FOV-based targeting
 		if (bShouldDrawAimbotVisuals && Vars::Aimbot::Enabled && Vars::Aimbot::DrawFOV && Vars::Aimbot::TargetSelection == 1)
 		{
-			// Get screen dimensions
+			// Calculate radius based on FOV using the same logic as Aimbot::DrawFOV to match visual with aimbot logic
+			auto pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TFPlayer*>();
+			float viewFov = 90.0f;
+			if (pLocal)
+			{
+				viewFov = static_cast<float>(pLocal->m_iFOV());
+				if (viewFov == 0.0f) viewFov = static_cast<float>(pLocal->m_iDefaultFOV());
+				if (viewFov == 0.0f) viewFov = 90.0f;
+			}
+			float viewFovRadians = (viewFov * 3.14159f) / 180.0f;
+			float aimFovRadians = (Vars::Aimbot::FOV * 3.14159f) / 180.0f;
+
 			ImGuiIO& io = ImGui::GetIO();
 			float centerX = io.DisplaySize.x / 2.0f;
 			float centerY = io.DisplaySize.y / 2.0f;
 
-			// Calculate radius based on FOV
-			float fovRadians = (Vars::Aimbot::FOV * 3.14159f) / 180.0f;
-			float radius = (io.DisplaySize.y / 2.0f) * tanf(fovRadians / 2.0f);
+			// Robust projection formula using Screen Width
+			float radius = (io.DisplaySize.x / 2.0f) * (tanf(aimFovRadians) / tanf(viewFovRadians / 2.0f));
 
 			// Draw the FOV circle with ImGui using custom color
 			ImU32 circleColor = IM_COL32(
@@ -562,7 +572,7 @@ void CMenu::DrawAimbotTab()
 	ImGui::Checkbox("Enable Backtrack", &Vars::Backtrack::Enabled);
 	if (Vars::Backtrack::Enabled)
 	{
-		ImGui::SliderFloat("Window Size", &Vars::Backtrack::flBacktrackWindowSize, 10.0f, 185.0f, "%.0f ms");
+		ImGui::SliderFloat("Window Size", &Vars::Backtrack::flBacktrackWindowSize, 10.0f, 140.0f, "%.0f ms");
 	}
 
 	ImGui::Separator();

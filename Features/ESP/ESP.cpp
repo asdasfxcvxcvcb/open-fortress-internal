@@ -539,13 +539,28 @@ void CFeatures_ESP::RenderLagRecords(IDrawInterface* draw)
 		const auto* records = F::Backtrack.GetRecords(pPlayer->entindex());
 		if (!records || records->empty()) continue;
 
-		// Draw the last valid record (oldest)
-		const auto& record = records->back();
+		// Find the best record to draw (closest to user's view or last valid)
+		const BacktrackRecord* pBestRecord = &records->back();
 		
-		const Color col = { 255, 255, 255, 128 }; // White transparent
+		// If manual shooting is likely, try to show what we would hit
+		// Use a simple heuristic: if we have a valid record closer to current time, show that?
+		// Or just stick to the oldest valid one which is the "backtrack" position usually
+		
+		// Determine color
+		Color skeletonColor;
+		if (Vars::ESP::UseEnemyColors)
+		{
+			float r, g, b;
+			pPlayer->GetGlowEffectColor(&r, &g, &b);
+			skeletonColor = Color(static_cast<int>(r * 255.0f), static_cast<int>(g * 255.0f), static_cast<int>(b * 255.0f), 128); // 50% alpha
+		}
+		else
+		{
+			skeletonColor = Color(static_cast<int>(Vars::Colors::SkeletonR * 255.0f), static_cast<int>(Vars::Colors::SkeletonG * 255.0f), static_cast<int>(Vars::Colors::SkeletonB * 255.0f), 128); // 50% alpha
+		}
 		
 		// Use mutable cast to satisfy RenderPlayerSkeleton signature
-		RenderPlayerSkeleton(draw, pPlayer, col, const_cast<matrix3x4_t*>(record.BoneMatrix));
+		RenderPlayerSkeleton(draw, pPlayer, skeletonColor, const_cast<matrix3x4_t*>(pBestRecord->BoneMatrix));
 	}
 }
 

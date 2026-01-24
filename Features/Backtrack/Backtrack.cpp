@@ -53,11 +53,9 @@ public:
 void CBacktrack::Update()
 {
 	m_UpdateCount++;
-	m_DebugStrings.clear();
 
 	if (!Vars::Backtrack::Enabled)
 	{
-		m_DebugStrings.push_back("Backtrack disabled in menu");
 		if (!m_Records.empty())
 			m_Records.clear();
 		return;
@@ -76,7 +74,8 @@ void CBacktrack::Update()
 	}
 
 	// Track active indices to clean up disconnected players
-	std::vector<int> activeIndices;
+	static std::vector<int> activeIndices;
+	activeIndices.clear();
 
 	for (int i = 1; i <= I::EngineClient->GetMaxClients(); i++)
 	{
@@ -204,11 +203,35 @@ void CBacktrack::Run(CUserCmd* pCmd)
 	C_TFPlayer* pLocal = I::ClientEntityList->GetClientEntity(I::EngineClient->GetLocalPlayer())->As<C_TFPlayer*>();
 	if (!pLocal) return;
 
+	// Skip backtracking for projectile weapons
+	C_BaseCombatWeapon* pWeapon = pLocal->GetActiveWeapon();
+	if (pWeapon)
+	{
+		const char* weaponName = pWeapon->GetName();
+		if (weaponName)
+		{
+			std::string weaponStr = weaponName;
+			std::transform(weaponStr.begin(), weaponStr.end(), weaponStr.begin(), ::tolower);
+
+			bool isProjectile = (weaponStr.find("rocket") != std::string::npos ||
+								 weaponStr.find("grenade") != std::string::npos ||
+								 weaponStr.find("pipe") != std::string::npos ||
+								 weaponStr.find("nailgun") != std::string::npos ||
+								 weaponStr.find("syringe") != std::string::npos ||
+								 weaponStr.find("tranq") != std::string::npos ||
+								 weaponStr.find("flare") != std::string::npos ||
+								 weaponStr.find("arrow") != std::string::npos);
+
+			if (isProjectile)
+				return;
+		}
+	}
+
 	Vector vViewAngles = pCmd->viewangles;
 	Vector vEyePos = pLocal->GetShootPos();
 
 	float flBestFOV = 255.0f;
-	int nBestTick = -1;
+	float flBestSimTime = -1.0f;
 
 	// Iterate safely using integer keys
 	for (auto& [iEntityIndex, records] : m_Records)
@@ -228,19 +251,22 @@ void CBacktrack::Run(CUserCmd* pCmd)
 			for (const auto& hb : record.Hitboxes)
 			{
 				float fov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, hb.vPos));
-				if (fov < flBestFOV)
+				
+				// Prefer older records (we iterate Newest -> Oldest)
+				// If we find an older record with similar FOV (within 1 degree), take it
+				if (flBestSimTime == -1.0f || fov < flBestFOV - 0.1f || (fov < flBestFOV + 1.0f && record.flSimulationTime < flBestSimTime))
 				{
 					flBestFOV = fov;
-					nBestTick = record.nTickCount;
+					flBestSimTime = record.flSimulationTime;
 				}
 			}
 		}
 	}
 
-	if (nBestTick != -1 && flBestFOV < 5.0f)
+	if (flBestSimTime != -1.0f && flBestFOV < 5.0f)
 	{
-		// Add lerp ticks to the target tick to match server-side lag compensation logic
-		pCmd->tick_count = nBestTick + TIME_TO_TICKS(GetLerp());
+		// Set tick count to the exact simulation time of the record (No Lerp)
+		pCmd->tick_count = TIME_TO_TICKS(flBestSimTime);
 	}
 }
 
@@ -294,26 +320,5 @@ float CBacktrack::GetWindow()
 
 void CBacktrack::DebugDraw()
 {
-	if (!Vars::Backtrack::Enabled || !I::EngineClient->IsInGame())
-		return;
-
-	int y = 300;
-	H::Draw.String(EFonts::DEBUG, 10, y, { 255, 255, 255, 255 }, TXT_DEFAULT, "Backtrack DEBUG"); y += 15;
-	H::Draw.String(EFonts::DEBUG, 10, y, { 255, 255, 255, 255 }, TXT_DEFAULT, "Updates: %d | Window: %.3f", m_UpdateCount, GetWindow()); y += 15;
-
-	for (const auto& [index, records] : m_Records)
-	{
-		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(index)->As<C_BaseEntity*>();
-		if (!pEntity || pEntity->IsDormant()) continue;
-
-		if (!records.empty())
-		{
-			const auto& last = records.back();
-			bool valid = IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime);
-			float delta = I::GlobalVarsBase->curtime - last.flSimulationTime;
-			H::Draw.String(EFonts::DEBUG, 20, y, valid ? Color(0, 255, 0, 255) : Color(255, 0, 0, 255), TXT_DEFAULT, 
-				"Player %d: %d records | Age: %.3f", index, records.size(), delta); 
-			y += 15;
-		}
-	}
+	// Removed debug output as requested
 }

@@ -197,23 +197,43 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 			else
 				return; // No visible hitbox
 
-			const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
-			
-			// Early FOV check for FOV-based targeting
-			if (Vars::Aimbot::TargetSelection == 1 && flFOV > Vars::Aimbot::FOV)
+			// FOV Check using centralized function
+			// Enforce FOV check regardless of TargetSelection mode
+			if (F::Aimbot.ShouldIgnore(pLocal, pCmd, vFinalHitbox))
 				return;
 
+			// Re-calculate for scoring since ShouldIgnore returns bool
+			const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
 			const float flDistance = vLocalPos.DistTo(vFinalHitbox);
 
 			bool bBetter = false;
-			switch (Vars::Aimbot::TargetSelection)
+			
+			// Custom prioritization for Backtrack
+			if (bestTarget.pEntity == nullptr)
 			{
-			case 0: // Distance
-				bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
-				break;
-			case 1: // FOV
-				bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
-				break;
+				bBetter = true;
+			}
+			else
+			{
+				switch (Vars::Aimbot::TargetSelection)
+				{
+				case 0: // Distance
+					bBetter = (flDistance < bestTarget.flDistance);
+					break;
+				case 1: // FOV
+					if (bestTarget.pEntity == pPlayer && pRecord != nullptr)
+					{
+						if (flFOV < bestTarget.flFOV + 5.0f)
+							bBetter = true;
+						else
+							bBetter = (flFOV < bestTarget.flFOV);
+					}
+					else
+					{
+						bBetter = (flFOV < bestTarget.flFOV);
+					}
+					break;
+				}
 			}
 
 			if (bBetter)
@@ -227,14 +247,9 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 			}
 		};
 
-		// 1. Check current tick
-		matrix3x4_t BoneMatrix[128];
-		if (pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
-		{
-			CheckTarget(nullptr, BoneMatrix, -1.0f);
-		}
+		bool bFoundBacktrack = false;
 
-		// 2. Check Backtrack records
+		// 1. Check Backtrack records
 		if (Vars::Backtrack::Enabled)
 		{
 			const auto* records = F::Backtrack.GetRecords(pPlayer->entindex());
@@ -242,12 +257,22 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 			{
 				for (const auto& record : *records)
 				{
-					// Check validity (185ms) - reuse logic from Backtrack class
 					if (!F::Backtrack.IsTickValid(record.flSimulationTime, I::GlobalVarsBase->curtime)) continue;
-					
-					// Use record matrix
 					CheckTarget(&record, const_cast<matrix3x4_t*>(record.BoneMatrix), record.flSimulationTime);
+					
+					if (bestTarget.pEntity == pPlayer && bestTarget.flSimTime == record.flSimulationTime)
+						bFoundBacktrack = true;
 				}
+			}
+		}
+
+		// 2. Check current tick
+		if (!bFoundBacktrack)
+		{
+			matrix3x4_t BoneMatrix[128];
+			if (pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
+			{
+				CheckTarget(nullptr, BoneMatrix, -1.0f);
 			}
 		}
 	}
@@ -314,8 +339,7 @@ void CAimbotHitscan::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 	if (target.flSimTime > 0.0f)
 	{
-		float flLerp = F::Backtrack.GetLerp();
-		pCmd->tick_count = TIME_TO_TICKS(target.flSimTime) + TIME_TO_TICKS(flLerp);
+		pCmd->tick_count = TIME_TO_TICKS(target.flSimTime);
 	}
 
 	AimAt(pLocal, pCmd, target.vPos);
