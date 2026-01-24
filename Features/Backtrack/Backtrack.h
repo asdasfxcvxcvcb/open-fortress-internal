@@ -36,17 +36,16 @@ public:
 	void Update();
 	void Run(CUserCmd* pCmd);
 	bool IsTickValid(float flSimTime, float flPlayerSimTime);
-	const std::deque<BacktrackRecord>* GetRecords(C_TFPlayer* pPlayer);
+	const std::deque<BacktrackRecord>* GetRecords(int iEntityIndex);
 	float GetLerp();
 	void DebugDraw();
 
 	// Helpers
 	float GetReal(int iFlow = 2, bool bNoFake = false); // 2 = MAX_FLOWS
-	float GetFakeInterp();
 	float GetWindow();
 
 private:
-	std::map<C_TFPlayer*, std::deque<BacktrackRecord>> m_Records;
+	std::map<int, std::deque<BacktrackRecord>> m_Records;
 	std::vector<std::string> m_DebugStrings;
 	int m_UpdateCount = 0;
 

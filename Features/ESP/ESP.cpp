@@ -536,7 +536,7 @@ void CFeatures_ESP::RenderLagRecords(IDrawInterface* draw)
 		C_TFPlayer* pPlayer = pEntity->As<C_TFPlayer*>();
 		if (!pPlayer || pPlayer->deadflag()) continue;
 
-		const auto* records = F::Backtrack.GetRecords(pPlayer);
+		const auto* records = F::Backtrack.GetRecords(pPlayer->entindex());
 		if (!records || records->empty()) continue;
 
 		// Draw the last valid record (oldest)

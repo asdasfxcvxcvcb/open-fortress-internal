@@ -563,8 +563,6 @@ void CMenu::DrawAimbotTab()
 	if (Vars::Backtrack::Enabled)
 	{
 		ImGui::SliderFloat("Window Size", &Vars::Backtrack::flBacktrackWindowSize, 10.0f, 200.0f, "%.0f ms");
-		ImGui::SliderFloat("Fake Latency", &Vars::Backtrack::Latency, 0.0f, 800.0f, "%.0f ms");
-		ImGui::SliderFloat("Fake Interp", &Vars::Backtrack::Interp, 0.0f, 100.0f, "%.0f ms");
 	}
 
 	ImGui::Separator();

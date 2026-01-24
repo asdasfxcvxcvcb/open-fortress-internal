@@ -74,6 +74,9 @@ void CBacktrack::Update()
 		return;
 	}
 
+	// Track active indices to clean up disconnected players
+	std::vector<int> activeIndices;
+
 	for (int i = 1; i <= I::EngineClient->GetMaxClients(); i++)
 	{
 		if (i == nLocalIndex)
@@ -82,20 +85,23 @@ void CBacktrack::Update()
 		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(i)->As<C_BaseEntity*>();
 		if (!pEntity || pEntity->IsDormant())
 		{
-			m_Records.erase(reinterpret_cast<C_TFPlayer*>(pEntity));
+			// Instead of immediate erase (which was unsafe with pointer keys), we just skip.
+			// The cleanup loop below handles removal.
 			continue;
 		}
+
+		activeIndices.push_back(i);
 
 		C_TFPlayer* pPlayer = pEntity->As<C_TFPlayer*>();
 		if (!pPlayer->IsAlive())
 		{
-			m_Records[pPlayer].clear();
+			m_Records[i].clear();
 			continue;
 		}
 
 		if (!Vars::Aimbot::FFAMode && pPlayer->m_iTeamNum() == pLocal->m_iTeamNum())
 		{
-			m_Records[pPlayer].clear();
+			m_Records[i].clear();
 			continue;
 		}
 
@@ -148,20 +154,39 @@ void CBacktrack::Update()
 			}
 		}
 
-		if (m_Records[pPlayer].empty() || record.flSimulationTime > m_Records[pPlayer].front().flSimulationTime)
+		if (m_Records[i].empty() || record.flSimulationTime > m_Records[i].front().flSimulationTime)
 		{
-			m_Records[pPlayer].push_front(record);
+			m_Records[i].push_front(record);
 		}
 
 		// Cleanup old records
-		while (!m_Records[pPlayer].empty())
+		while (!m_Records[i].empty())
 		{
-			auto& last = m_Records[pPlayer].back();
+			auto& last = m_Records[i].back();
 			if (!IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime))
-				m_Records[pPlayer].pop_back();
+				m_Records[i].pop_back();
 			else
 				break;
 		}
+	}
+
+	// Remove records for players that are no longer valid (disconnected or dormant)
+	for (auto it = m_Records.begin(); it != m_Records.end();)
+	{
+		bool bFound = false;
+		for (int idx : activeIndices)
+		{
+			if (idx == it->first)
+			{
+				bFound = true;
+				break;
+			}
+		}
+
+		if (!bFound)
+			it = m_Records.erase(it);
+		else
+			++it;
 	}
 }
 
@@ -182,9 +207,14 @@ void CBacktrack::Run(CUserCmd* pCmd)
 	float flBestFOV = 255.0f;
 	int nBestTick = -1;
 
-	for (auto& [player, records] : m_Records)
+	// Iterate safely using integer keys
+	for (auto& [iEntityIndex, records] : m_Records)
 	{
-		if (!player || player->IsDormant() || !player->IsAlive()) continue;
+		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(iEntityIndex);
+		if (!pEntity || pEntity->IsDormant()) continue;
+		
+		C_TFPlayer* pPlayer = pEntity->As<C_TFPlayer*>();
+		if (!pPlayer->IsAlive()) continue;
 
 		for (const auto& record : records)
 		{
@@ -216,17 +246,17 @@ bool CBacktrack::IsTickValid(float flSimTime, float flCurTime)
 	if (!pNetChan)
 		return false;
 
-	float flCorrect = std::clamp(GetReal(MAX_FLOWS, false) + GetFakeInterp(), 0.f, m_flMaxUnlag);
+	float flCorrect = std::clamp(GetReal(MAX_FLOWS, false), 0.f, m_flMaxUnlag);
 	float flDelta = fabsf(flCorrect - (flCurTime - flSimTime));
 	
 	return flDelta < GetWindow();
 }
 
-const std::deque<BacktrackRecord>* CBacktrack::GetRecords(C_TFPlayer* pPlayer)
+const std::deque<BacktrackRecord>* CBacktrack::GetRecords(int iEntityIndex)
 {
-	if (m_Records.find(pPlayer) == m_Records.end())
+	if (m_Records.find(iEntityIndex) == m_Records.end())
 		return nullptr;
-	return &m_Records[pPlayer];
+	return &m_Records[iEntityIndex];
 }
 
 float CBacktrack::GetLerp()
@@ -236,7 +266,7 @@ float CBacktrack::GetLerp()
 	static auto cl_updaterate = I::Cvar->FindVar("cl_updaterate");
 
 	float lerp = cl_interp ? cl_interp->GetFloat() : 0.1f;
-	float ratio = cl_interp_ratio ? cl_interp->GetFloat() : 2.0f;
+	float ratio = cl_interp_ratio ? cl_interp_ratio->GetFloat() : 2.0f;
 	float rate = cl_updaterate ? cl_updaterate->GetFloat() : 66.0f;
 
 	if (ratio / rate > lerp)
@@ -257,11 +287,6 @@ float CBacktrack::GetReal(int iFlow, bool bNoFake)
 	return pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING);
 }
 
-float CBacktrack::GetFakeInterp()
-{
-	return 0.0f;
-}
-
 float CBacktrack::GetWindow()
 {
 	return Vars::Backtrack::flBacktrackWindowSize / 1000.f;
@@ -276,17 +301,18 @@ void CBacktrack::DebugDraw()
 	H::Draw.String(EFonts::DEBUG, 10, y, { 255, 255, 255, 255 }, TXT_DEFAULT, "Backtrack DEBUG"); y += 15;
 	H::Draw.String(EFonts::DEBUG, 10, y, { 255, 255, 255, 255 }, TXT_DEFAULT, "Updates: %d | Window: %.3f", m_UpdateCount, GetWindow()); y += 15;
 
-	for (const auto& [player, records] : m_Records)
+	for (const auto& [index, records] : m_Records)
 	{
-		if (!player || player->IsDormant() || !player->IsAlive()) continue;
-		
+		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(index);
+		if (!pEntity || pEntity->IsDormant()) continue;
+
 		if (!records.empty())
 		{
 			const auto& last = records.back();
 			bool valid = IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime);
 			float delta = I::GlobalVarsBase->curtime - last.flSimulationTime;
 			H::Draw.String(EFonts::DEBUG, 20, y, valid ? Color(0, 255, 0, 255) : Color(255, 0, 0, 255), TXT_DEFAULT, 
-				"Player %d: %d records | Age: %.3f", player->entindex(), records.size(), delta); 
+				"Player %d: %d records | Age: %.3f", index, records.size(), delta); 
 			y += 15;
 		}
 	}

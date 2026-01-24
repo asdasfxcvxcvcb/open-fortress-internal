@@ -153,8 +153,6 @@ namespace Vars
 		REGISTER_VAR(Backtrack, bool, Enabled, false)
 		REGISTER_VAR(Backtrack, bool, DrawSkeleton, false)
 		REGISTER_VAR(Backtrack, float, flBacktrackWindowSize, 200.0f)
-		REGISTER_VAR(Backtrack, float, Latency, 0.0f)
-		REGISTER_VAR(Backtrack, float, Interp, 0.0f)
 	}
 	
 	namespace Colors
