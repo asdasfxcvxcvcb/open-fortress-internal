@@ -1,5 +1,6 @@
 #include "Backtrack.h"
 #include "../Vars.h"
+#include "../../SDK/Globals.h"
 #include "../../Util/Math/Math.h"
 #include "../../SDK/Interfaces/IVEngineClient.h"
 #include "../../SDK/Includes/client_class.h"
@@ -193,6 +194,10 @@ void CBacktrack::Update()
 void CBacktrack::Run(CUserCmd* pCmd)
 {
 	if (!Vars::Backtrack::Enabled)
+		return;
+
+	// Don't interfere if Aimbot is already active
+	if (G::bAimbotActive)
 		return;
 
 	if (!(pCmd->buttons & IN_ATTACK))
