@@ -246,16 +246,6 @@ void CBacktrack::Run(CUserCmd* pCmd)
 
 bool CBacktrack::IsTickValid(float flSimTime, float flCurTime)
 {
-	INetChannelInfo* pNetChan = reinterpret_cast<INetChannelInfo*>(I::EngineClient->GetNetChannelInfo());
-	if (!pNetChan)
-		return false;
-
-	// Correct logic: check if the record is within the server's rewind window.
-	// Server rewind = Latency + Lerp.
-	// Age = CurTime - SimTime.
-	// Delta = Correct - Age.
-	// We use RTT (Round Trip Time) for latency to approximate the total delay the server sees relative to our command arrival.
-	
 	float flCorrect = std::clamp(GetReal(MAX_FLOWS, false) + GetLerp(), 0.f, m_flMaxUnlag);
 	float flDelta = fabsf(flCorrect - (flCurTime - flSimTime));
 	
