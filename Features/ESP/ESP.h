@@ -54,7 +54,8 @@ private:
 
 	// Unified rendering - add new ESP features here
 	void RenderPlayers(IDrawInterface* draw);
-	void RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlayer, const Color& customColor);
+	void RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlayer, const Color& customColor, matrix3x4_t* pBoneMatrix = nullptr);
+	void RenderLagRecords(IDrawInterface* draw);
 	void RenderWorldItems(IDrawInterface* draw);
 
 	bool IsAmmo(const int nModelIndex);

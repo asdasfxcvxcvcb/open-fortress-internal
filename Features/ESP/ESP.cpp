@@ -1,6 +1,7 @@
 #include "ESP.h"
 #include "../Vars.h"
 #include "../../vendor/imgui/imgui.h"
+#include "../Backtrack/Backtrack.h"
 
 // ============================================================================
 // Unified ESP Drawing Constants
@@ -194,7 +195,7 @@ static void DrawText(ImDrawList* drawList, const ImVec2& pos, ImU32 color, const
 // Unified ESP Rendering - Add new features here once
 // ============================================================================
 
-void CFeatures_ESP::RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlayer, const Color& customColor)
+void CFeatures_ESP::RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlayer, const Color& customColor, matrix3x4_t* pBoneMatrix)
 {
 	if (!pPlayer) return;
 
@@ -205,7 +206,13 @@ void CFeatures_ESP::RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlay
 	if (!pHdr) return;
 
 	matrix3x4_t BoneMatrix[128];
-	if (!pPlayer->SetupBones(BoneMatrix, 128, 0x100, 0.0f)) return;
+	matrix3x4_t* pBones = pBoneMatrix;
+
+	if (!pBones)
+	{
+		if (!pPlayer->SetupBones(BoneMatrix, 128, 0x100, 0.0f)) return;
+		pBones = BoneMatrix;
+	}
 
 	Color skeletonColor = customColor;
 	Color outlineColor(0, 0, 0, 255);
@@ -222,8 +229,8 @@ void CFeatures_ESP::RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlay
 		if (pHeadBox)
 		{
 			Vector vMin, vMax;
-			U::Math.VectorTransform(pHeadBox->bbmin, BoneMatrix[pHeadBox->bone], vMin);
-			U::Math.VectorTransform(pHeadBox->bbmax, BoneMatrix[pHeadBox->bone], vMax);
+			U::Math.VectorTransform(pHeadBox->bbmin, pBones[pHeadBox->bone], vMin);
+			U::Math.VectorTransform(pHeadBox->bbmax, pBones[pHeadBox->bone], vMax);
 			vHeadPos = (vMin + vMax) * 0.5f;
 			
 			if (pHeadBox->bone > 0)
@@ -231,7 +238,7 @@ void CFeatures_ESP::RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlay
 				mstudiobone_t* pHeadBone = pHdr->pBone(pHeadBox->bone);
 				if (pHeadBone && pHeadBone->parent != -1)
 				{
-					U::Math.VectorTransform(Vector(0, 0, 0), BoneMatrix[pHeadBone->parent], vNeckPos);
+					U::Math.VectorTransform(Vector(0, 0, 0), pBones[pHeadBone->parent], vNeckPos);
 					Vector2D screenHead, screenNeck;
 					if (H::Draw.WorldPosToScreenPos(vHeadPos, screenHead) && H::Draw.WorldPosToScreenPos(vNeckPos, screenNeck))
 					{
@@ -253,8 +260,8 @@ void CFeatures_ESP::RenderPlayerSkeleton(IDrawInterface* draw, C_TFPlayer* pPlay
 			continue;
 
 		Vector vChildPos, vParentPos;
-		U::Math.VectorTransform(Vector(0, 0, 0), BoneMatrix[i], vChildPos);
-		U::Math.VectorTransform(Vector(0, 0, 0), BoneMatrix[pBone->parent], vParentPos);
+		U::Math.VectorTransform(Vector(0, 0, 0), pBones[i], vChildPos);
+		U::Math.VectorTransform(Vector(0, 0, 0), pBones[pBone->parent], vParentPos);
 
 		Vector2D screenChild, screenParent;
 		if (H::Draw.WorldPosToScreenPos(vChildPos, screenChild) && H::Draw.WorldPosToScreenPos(vParentPos, screenParent))
@@ -494,6 +501,7 @@ void CFeatures_ESP::Render()
 	ImGuiDraw drawer(drawList);
 	if (Vars::ESP::Players) RenderPlayers(&drawer);
 	if (Vars::ESP::Items) RenderWorldItems(&drawer);
+	if (Vars::Backtrack::Enabled && Vars::Backtrack::DrawSkeleton) RenderLagRecords(&drawer);
 }
 
 void CFeatures_ESP::RenderSurface()
@@ -507,6 +515,38 @@ void CFeatures_ESP::RenderSurface()
 	SurfaceDraw drawer;
 	if (Vars::ESP::Players) RenderPlayers(&drawer);
 	if (Vars::ESP::Items) RenderWorldItems(&drawer);
+	if (Vars::Backtrack::Enabled && Vars::Backtrack::DrawSkeleton) RenderLagRecords(&drawer);
+}
+
+void CFeatures_ESP::RenderLagRecords(IDrawInterface* draw)
+{
+	const int nMaxClients = I::EngineClient->GetMaxClients();
+	const int nLocalIndex = I::EngineClient->GetLocalPlayer();
+	const auto pLocal = I::ClientEntityList->GetClientEntity(nLocalIndex)->As<C_TFPlayer*>();
+
+	if (!pLocal) return;
+
+	for (int i = 1; i <= nMaxClients; i++)
+	{
+		if (i == nLocalIndex) continue;
+
+		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(i)->As<C_BaseEntity*>();
+		if (!pEntity || pEntity->IsDormant()) continue;
+
+		C_TFPlayer* pPlayer = pEntity->As<C_TFPlayer*>();
+		if (!pPlayer || pPlayer->deadflag()) continue;
+
+		const auto* records = F::Backtrack.GetRecords(pPlayer);
+		if (!records || records->empty()) continue;
+
+		// Draw the last valid record (oldest)
+		const auto& record = records->back();
+		
+		const Color col = { 255, 255, 255, 128 }; // White transparent
+		
+		// Use mutable cast to satisfy RenderPlayerSkeleton signature
+		RenderPlayerSkeleton(draw, pPlayer, col, const_cast<matrix3x4_t*>(record.BoneMatrix));
+	}
 }
 
 void CFeatures_ESP::LevelInitPostEntity()

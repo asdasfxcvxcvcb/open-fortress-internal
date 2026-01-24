@@ -251,8 +251,8 @@ public:
 	}
 
 public:
-	NETVAR(m_flAnimTime, int, "CBaseEntity", "m_flAnimTime");
-	NETVAR(m_flSimulationTime, int, "CBaseEntity", "m_flSimulationTime");
+	NETVAR(m_flAnimTime, float, "CBaseEntity", "m_flAnimTime");
+	NETVAR(m_flSimulationTime, float, "CBaseEntity", "m_flSimulationTime");
 	NETVAR(m_ubInterpolationFrame, int, "CBaseEntity", "m_ubInterpolationFrame");
 	NETVAR(m_vecOrigin, Vector, "CBaseEntity", "m_vecOrigin");
 	NETVAR(m_angRotation, Vector, "CBaseEntity", "m_angRotation");

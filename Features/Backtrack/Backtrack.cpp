@@ -236,7 +236,7 @@ float CBacktrack::GetLerp()
 	static auto cl_updaterate = I::Cvar->FindVar("cl_updaterate");
 
 	float lerp = cl_interp ? cl_interp->GetFloat() : 0.1f;
-	float ratio = cl_interp_ratio ? cl_interp_ratio->GetFloat() : 2.0f;
+	float ratio = cl_interp_ratio ? cl_interp->GetFloat() : 2.0f;
 	float rate = cl_updaterate ? cl_updaterate->GetFloat() : 66.0f;
 
 	if (ratio / rate > lerp)
@@ -259,13 +259,12 @@ float CBacktrack::GetReal(int iFlow, bool bNoFake)
 
 float CBacktrack::GetFakeInterp()
 {
-	// We are not using fake interp
 	return 0.0f;
 }
 
 float CBacktrack::GetWindow()
 {
-	return Vars::Backtrack::Window / 1000.f;
+	return Vars::Backtrack::flBacktrackWindowSize / 1000.f;
 }
 
 void CBacktrack::DebugDraw()

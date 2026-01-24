@@ -13,6 +13,9 @@
 #define INVALID_STEAM_LOGON_TICKET_CANCELED "Client left game (Steam auth ticket has been canceled)\n"
 #define CLIENTNAME_TIMED_OUT "%s timed out"
 
+#define TIME_TO_TICKS( dt ) ( (int)( 0.5f + (float)(dt) / I::GlobalVarsBase->interval_per_tick ) )
+#define TICKS_TO_TIME( t ) ( I::GlobalVarsBase->interval_per_tick * ( t ) )
+
 #define DEFAULT_TICK_INTERVAL (0.015)
 #define MINIMUM_TICK_INTERVAL (0.001)
 #define MAXIMUM_TICK_INTERVAL (0.1)

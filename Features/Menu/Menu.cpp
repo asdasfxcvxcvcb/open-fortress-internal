@@ -339,6 +339,9 @@ void CMenu::Render()
 	// Check bind activation (only when menu is closed)
 	CheckBindActivation();
 
+	// Update W2S matrix for ImGui rendering
+	H::Draw.UpdateMatrix();
+
 	// Start ImGui frame
 	ImGui_ImplDX9_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -555,6 +558,16 @@ void CMenu::DrawAimbotTab()
 	ImGui::Checkbox("Ignore Friends", &Vars::Aimbot::IgnoreFriends);
 
 	ImGui::Separator();
+	ImGui::Text("Backtrack");
+	ImGui::Checkbox("Enable Backtrack", &Vars::Backtrack::Enabled);
+	if (Vars::Backtrack::Enabled)
+	{
+		ImGui::SliderFloat("Window Size", &Vars::Backtrack::flBacktrackWindowSize, 10.0f, 200.0f, "%.0f ms");
+		ImGui::SliderFloat("Fake Latency", &Vars::Backtrack::Latency, 0.0f, 800.0f, "%.0f ms");
+		ImGui::SliderFloat("Fake Interp", &Vars::Backtrack::Interp, 0.0f, 100.0f, "%.0f ms");
+	}
+
+	ImGui::Separator();
 }
 
 void CMenu::DrawVisualsTab()
@@ -615,6 +628,7 @@ void CMenu::DrawVisualsTab()
 				ImGui::Checkbox("Weapons", &Vars::ESP::PlayerWeapons);
 				ImGui::Checkbox("Conditions", &Vars::ESP::PlayerConditions);
 				ImGui::Checkbox("Skeleton", &Vars::ESP::PlayerSkeleton);
+				ImGui::Checkbox("Backtrack Skeleton", &Vars::Backtrack::DrawSkeleton);
 				ImGui::Unindent();
 			}
 		}

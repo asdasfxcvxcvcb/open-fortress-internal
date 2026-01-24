@@ -5,6 +5,7 @@
 #include "../../Features/Menu/Menu.h"
 #include "../../Features/Aimbot/Aimbot.h"
 #include "../../Util/DirectX/DirectX.h"
+#include "../../Features/Backtrack/Backtrack.h"
 
 DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 {
@@ -54,6 +55,8 @@ DEFINE_HOOK(IEngineVGui_Paint, void, __fastcall, void* ecx, void* edx, int mode)
 			// Render ESP using in-game paint if enabled
 			if (Vars::ESP::UseInGameRender)
 				F::ESP.RenderSurface();
+
+			F::Backtrack.DebugDraw();
 		}
 		I::MatSystemSurface->FinishDrawing();
 	}

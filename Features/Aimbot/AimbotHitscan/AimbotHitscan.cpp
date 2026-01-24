@@ -1,18 +1,25 @@
 #include "AimbotHitscan.h"
 #include "../Aimbot.h"
 #include "../../Vars.h"
+#include "../../Backtrack/Backtrack.h"
 #include "../../../SDK/Helpers.h"
 #include "../../../SDK/Helpers/Helpers.h"
 
 
-bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
+bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut, matrix3x4_t* pBoneMatrix)
 {
 	if (!pEntity)
 		return false;
 
 	matrix3x4_t BoneMatrix[128];
-	if (!pEntity->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
-		return false;
+	matrix3x4_t* pBones = pBoneMatrix;
+
+	if (!pBones)
+	{
+		if (!pEntity->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
+			return false;
+		pBones = BoneMatrix;
+	}
 
 	int nHitbox = 3;
 
@@ -57,8 +64,8 @@ bool CAimbotHitscan::GetHitbox(C_TFPlayer* pEntity, Vector& vOut)
 		return false;
 
 	Vector vMin, vMax;
-	U::Math.VectorTransform(pBox->bbmin, BoneMatrix[pBox->bone], vMin);
-	U::Math.VectorTransform(pBox->bbmax, BoneMatrix[pBox->bone], vMax);
+	U::Math.VectorTransform(pBox->bbmin, pBones[pBox->bone], vMin);
+	U::Math.VectorTransform(pBox->bbmax, pBones[pBox->bone], vMax);
 
 	vOut = (vMin + vMax) * 0.5f;
 	return true;
@@ -107,116 +114,141 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 		if (!F::Aimbot.IsValidTarget(pLocal, pPlayer))
 			continue;
 
-		// Setup bones once
-		matrix3x4_t BoneMatrix[128];
-		if (!pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
-			continue;
-
-		const auto pModel = pPlayer->GetModel();
-		if (!pModel)
-			continue;
-
-		const auto pHdr = I::ModelInfoClient->GetStudiomodel(pModel);
-		if (!pHdr)
-			continue;
-
-		const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
-		if (!pSet)
-			continue;
-
-		// Determine hitboxes to check based on mode
-		int primaryHitbox = 3; // Body
-		int secondaryHitbox = 0; // Head
-		
-		if (Vars::Aimbot::Hitbox == 0)
+		// Helper lambda to check a specific matrix/simtime
+		auto CheckTarget = [&](const BacktrackRecord* pRecord, matrix3x4_t* pMatrix, float flSimTime) -> void
 		{
-			primaryHitbox = 0; // Head only
-			secondaryHitbox = -1;
-		}
-		else if (Vars::Aimbot::Hitbox == 1)
-		{
-			primaryHitbox = 3; // Body only
-			secondaryHitbox = -1;
-		}
-		else if (Vars::Aimbot::Hitbox == 2) // Auto
-		{
-			if (isRailgunOrSniper)
+			const auto pModel = pPlayer->GetModel();
+			if (!pModel) return;
+
+			const auto pHdr = I::ModelInfoClient->GetStudiomodel(pModel);
+			if (!pHdr) return;
+
+			const auto pSet = pHdr->pHitboxSet(pPlayer->m_nHitboxSet());
+			if (!pSet) return;
+
+			// Determine hitboxes to check based on mode
+			int primaryHitbox = 3; // Body
+			int secondaryHitbox = 0; // Head
+			
+			if (Vars::Aimbot::Hitbox == 0)
 			{
-				primaryHitbox = 0; // Head first for snipers
-				secondaryHitbox = 3; // Body fallback
+				primaryHitbox = 0; // Head only
+				secondaryHitbox = -1;
 			}
+			else if (Vars::Aimbot::Hitbox == 1)
+			{
+				primaryHitbox = 3; // Body only
+				secondaryHitbox = -1;
+			}
+			else if (Vars::Aimbot::Hitbox == 2) // Auto
+			{
+				if (isRailgunOrSniper)
+				{
+					primaryHitbox = 0; // Head first for snipers
+					secondaryHitbox = 3; // Body fallback
+				}
+				else
+				{
+					primaryHitbox = 3; // Body first for others
+					secondaryHitbox = 0; // Head fallback
+				}
+			}
+
+			auto GetHitboxPos = [&](int nIdx) -> Vector {
+				if (pRecord) {
+					for (const auto& hb : pRecord->Hitboxes) {
+						if (hb.nHitboxIndex == nIdx) return hb.vPos;
+					}
+					return Vector(0,0,0);
+				} else {
+					Vector vOut;
+					if (GetHitbox(pPlayer, vOut, pMatrix)) return vOut;
+					return Vector(0,0,0);
+				}
+			};
+
+			// Check primary hitbox
+			Vector vPrimaryHitbox = GetHitboxPos(primaryHitbox);
+			bool bPrimaryValid = !vPrimaryHitbox.IsZero();
+			
+			if (bPrimaryValid)
+			{
+				bPrimaryValid = IsVisible(pLocal, pPlayer, vPrimaryHitbox);
+			}
+
+			// Check secondary hitbox if needed
+			Vector vSecondaryHitbox;
+			bool bSecondaryValid = false;
+			if (!bPrimaryValid && secondaryHitbox >= 0)
+			{
+				vSecondaryHitbox = GetHitboxPos(secondaryHitbox);
+				if (!vSecondaryHitbox.IsZero())
+				{
+					bSecondaryValid = IsVisible(pLocal, pPlayer, vSecondaryHitbox);
+				}
+			}
+
+			// Use whichever hitbox is visible
+			Vector vFinalHitbox;
+			if (bPrimaryValid)
+				vFinalHitbox = vPrimaryHitbox;
+			else if (bSecondaryValid)
+				vFinalHitbox = vSecondaryHitbox;
 			else
+				return; // No visible hitbox
+
+			const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
+			
+			// Early FOV check for FOV-based targeting
+			if (Vars::Aimbot::TargetSelection == 1 && flFOV > Vars::Aimbot::FOV)
+				return;
+
+			const float flDistance = vLocalPos.DistTo(vFinalHitbox);
+
+			bool bBetter = false;
+			switch (Vars::Aimbot::TargetSelection)
 			{
-				primaryHitbox = 3; // Body first for others
-				secondaryHitbox = 0; // Head fallback
+			case 0: // Distance
+				bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
+				break;
+			case 1: // FOV
+				bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
+				break;
 			}
-		}
 
-		// Check primary hitbox
-		Vector vPrimaryHitbox;
-		bool bPrimaryValid = false;
-		const auto pPrimaryBox = pSet->pHitbox(primaryHitbox);
-		if (pPrimaryBox)
-		{
-			Vector vMin, vMax;
-			U::Math.VectorTransform(pPrimaryBox->bbmin, BoneMatrix[pPrimaryBox->bone], vMin);
-			U::Math.VectorTransform(pPrimaryBox->bbmax, BoneMatrix[pPrimaryBox->bone], vMax);
-			vPrimaryHitbox = (vMin + vMax) * 0.5f;
-			bPrimaryValid = IsVisible(pLocal, pPlayer, vPrimaryHitbox);
-		}
-
-		// Check secondary hitbox if needed
-		Vector vSecondaryHitbox;
-		bool bSecondaryValid = false;
-		if (!bPrimaryValid && secondaryHitbox >= 0)
-		{
-			const auto pSecondaryBox = pSet->pHitbox(secondaryHitbox);
-			if (pSecondaryBox)
+			if (bBetter)
 			{
-				Vector vMin, vMax;
-				U::Math.VectorTransform(pSecondaryBox->bbmin, BoneMatrix[pSecondaryBox->bone], vMin);
-				U::Math.VectorTransform(pSecondaryBox->bbmax, BoneMatrix[pSecondaryBox->bone], vMax);
-				vSecondaryHitbox = (vMin + vMax) * 0.5f;
-				bSecondaryValid = IsVisible(pLocal, pPlayer, vSecondaryHitbox);
+				bestTarget.pEntity = pPlayer;
+				bestTarget.vPos = vFinalHitbox;
+				bestTarget.flFOV = flFOV;
+				bestTarget.flDistance = flDistance;
+				bestTarget.flSimTime = flSimTime;
+				bestTarget.pBoneMatrix = pMatrix;
 			}
-		}
+		};
 
-		// Use whichever hitbox is visible
-		Vector vFinalHitbox;
-		if (bPrimaryValid)
-			vFinalHitbox = vPrimaryHitbox;
-		else if (bSecondaryValid)
-			vFinalHitbox = vSecondaryHitbox;
-		else
-			continue; // No visible hitbox
-
-		const float flFOV = U::Math.GetFovBetween(pCmd->viewangles, U::Math.GetAngleToPosition(vLocalPos, vFinalHitbox));
-		
-		// Early FOV check for FOV-based targeting
-		if (Vars::Aimbot::TargetSelection == 1 && flFOV > Vars::Aimbot::FOV)
-			continue;
-
-		const float flDistance = vLocalPos.DistTo(vFinalHitbox);
-
-		bool bBetter = false;
-		switch (Vars::Aimbot::TargetSelection)
+		// 1. Check current tick
+		matrix3x4_t BoneMatrix[128];
+		if (pPlayer->SetupBones(BoneMatrix, 128, 0x100, I::GlobalVarsBase->curtime))
 		{
-		case 0: // Distance
-			bBetter = (bestTarget.pEntity == nullptr || flDistance < bestTarget.flDistance);
-			break;
-		case 1: // FOV
-			bBetter = (bestTarget.pEntity == nullptr || flFOV < bestTarget.flFOV);
-			break;
+			CheckTarget(nullptr, BoneMatrix, -1.0f);
 		}
 
-		if (bBetter)
+		// 2. Check Backtrack records
+		if (Vars::Backtrack::Enabled)
 		{
-			bestTarget.pEntity = pPlayer;
-			bestTarget.vPos = vFinalHitbox;
-			bestTarget.flFOV = flFOV;
-			bestTarget.flDistance = flDistance;
-		}
-	}
+			const auto* records = F::Backtrack.GetRecords(pPlayer);
+			if (records)
+			{
+				                for (const auto& record : *records)
+				                {
+				                    // Check validity (185ms) - reuse logic from Backtrack class
+				                    if (!F::Backtrack.IsTickValid(record.flSimulationTime, pPlayer->m_flSimulationTime())) continue;
+				                    
+				                    				    // Use record matrix
+				                    				    CheckTarget(&record, const_cast<matrix3x4_t*>(record.BoneMatrix), record.flSimulationTime);
+				                    				}			}
+				                    		}	}
 
 	return bestTarget;
 }
@@ -277,6 +309,12 @@ void CAimbotHitscan::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 
 	if (Vars::Aimbot::AutoShoot)
 		pCmd->buttons |= IN_ATTACK;
+
+	if (target.flSimTime > 0.0f)
+	{
+		float flLerp = F::Backtrack.GetLerp();
+		pCmd->tick_count = TIME_TO_TICKS(target.flSimTime + flLerp);
+	}
 
 	AimAt(pLocal, pCmd, target.vPos);
 }
