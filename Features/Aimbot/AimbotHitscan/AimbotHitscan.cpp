@@ -243,7 +243,7 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 				for (const auto& record : *records)
 				{
 					// Check validity (185ms) - reuse logic from Backtrack class
-					if (!F::Backtrack.IsTickValid(record.flSimulationTime, pPlayer->m_flSimulationTime())) continue;
+					if (!F::Backtrack.IsTickValid(record.flSimulationTime, I::GlobalVarsBase->curtime)) continue;
 					
 					// Use record matrix
 					CheckTarget(&record, const_cast<matrix3x4_t*>(record.BoneMatrix), record.flSimulationTime);
