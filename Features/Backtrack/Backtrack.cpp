@@ -236,7 +236,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 
 	if (nBestTick != -1 && flBestFOV < 5.0f)
 	{
-		pCmd->tick_count = nBestTick;
+		pCmd->tick_count = nBestTick + TIME_TO_TICKS(GetLerp());
 	}
 }
 

@@ -315,7 +315,7 @@ void CAimbotHitscan::Run(C_TFPlayer* pLocal, CUserCmd* pCmd)
 	if (target.flSimTime > 0.0f)
 	{
 		float flLerp = F::Backtrack.GetLerp();
-		pCmd->tick_count = TIME_TO_TICKS(target.flSimTime + flLerp);
+		pCmd->tick_count = TIME_TO_TICKS(target.flSimTime) + TIME_TO_TICKS(flLerp);
 	}
 
 	AimAt(pLocal, pCmd, target.vPos);
