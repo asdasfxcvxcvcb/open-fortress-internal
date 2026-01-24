@@ -242,13 +242,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 
 bool CBacktrack::IsTickValid(float flSimTime, float flCurTime)
 {
-	INetChannelInfo* pNetChan = reinterpret_cast<INetChannelInfo*>(I::EngineClient->GetNetChannelInfo());
-	if (!pNetChan)
-		return false;
-
-	float flCorrect = std::clamp(GetReal(MAX_FLOWS, false), 0.f, m_flMaxUnlag);
-	float flDelta = fabsf(flCorrect - (flCurTime - flSimTime));
-	
+	float flDelta = flCurTime - flSimTime;
 	return flDelta < GetWindow();
 }
 
