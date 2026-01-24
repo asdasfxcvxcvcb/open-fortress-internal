@@ -86,8 +86,6 @@ void CBacktrack::Update()
 		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(i)->As<C_BaseEntity*>();
 		if (!pEntity || pEntity->IsDormant())
 		{
-			// Instead of immediate erase (which was unsafe with pointer keys), we just skip.
-			// The cleanup loop below handles removal.
 			continue;
 		}
 
@@ -241,13 +239,26 @@ void CBacktrack::Run(CUserCmd* pCmd)
 
 	if (nBestTick != -1 && flBestFOV < 5.0f)
 	{
+		// Add lerp ticks to the target tick to match server-side lag compensation logic
 		pCmd->tick_count = nBestTick + TIME_TO_TICKS(GetLerp());
 	}
 }
 
 bool CBacktrack::IsTickValid(float flSimTime, float flCurTime)
 {
-	float flDelta = flCurTime - flSimTime;
+	INetChannelInfo* pNetChan = reinterpret_cast<INetChannelInfo*>(I::EngineClient->GetNetChannelInfo());
+	if (!pNetChan)
+		return false;
+
+	// Correct logic: check if the record is within the server's rewind window.
+	// Server rewind = Latency + Lerp.
+	// Age = CurTime - SimTime.
+	// Delta = Correct - Age.
+	// We use RTT (Round Trip Time) for latency to approximate the total delay the server sees relative to our command arrival.
+	
+	float flCorrect = std::clamp(GetReal(MAX_FLOWS, false) + GetLerp(), 0.f, m_flMaxUnlag);
+	float flDelta = fabsf(flCorrect - (flCurTime - flSimTime));
+	
 	return flDelta < GetWindow();
 }
 
