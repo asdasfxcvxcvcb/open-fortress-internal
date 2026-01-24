@@ -250,6 +250,7 @@ AimbotTarget CAimbotHitscan::GetBestTarget(C_TFPlayer* pLocal, CUserCmd* pCmd)
 				}
 			}
 		}
+	}
 
 	return bestTarget;
 }

@@ -210,7 +210,7 @@ void CBacktrack::Run(CUserCmd* pCmd)
 	// Iterate safely using integer keys
 	for (auto& [iEntityIndex, records] : m_Records)
 	{
-		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(iEntityIndex);
+		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(iEntityIndex)->As<C_BaseEntity*>();
 		if (!pEntity || pEntity->IsDormant()) continue;
 		
 		C_TFPlayer* pPlayer = pEntity->As<C_TFPlayer*>();
@@ -303,7 +303,7 @@ void CBacktrack::DebugDraw()
 
 	for (const auto& [index, records] : m_Records)
 	{
-		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(index);
+		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(index)->As<C_BaseEntity*>();
 		if (!pEntity || pEntity->IsDormant()) continue;
 
 		if (!records.empty())
