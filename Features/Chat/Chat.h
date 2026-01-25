@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <string>
-#include <chrono>
 
 class CChat
 {
@@ -10,7 +9,7 @@ private:
 	std::vector<std::string> m_vSpamMessages;
 	int m_nCurrentMessageIndex = 0;
 	std::string m_sFilePath = "C:\\necromancer_OF2\\chat\\chatspam.txt";
-	std::chrono::steady_clock::time_point m_LastSpamTime;
+	float m_LastSpamTime = 0.0f;
 
 public:
 	void Initialize();

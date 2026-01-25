@@ -4,7 +4,7 @@
 #include <fstream>
 #include <Windows.h>
 #include <sstream>
-#include <chrono>
+#include "../../SDK/Includes/client_class.h"
 
 void CChat::Initialize()
 {
@@ -34,7 +34,7 @@ void CChat::Initialize()
 	RefreshMessages();
 	
 	// Initialize timer
-	m_LastSpamTime = std::chrono::steady_clock::now();
+	m_LastSpamTime = 0.0f;
 }
 
 void CChat::RefreshMessages()
@@ -85,10 +85,9 @@ void CChat::Run()
 		return;
 	
 	// Check if enough time has passed
-	auto now = std::chrono::steady_clock::now();
-	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_LastSpamTime).count() / 1000.0f;
+	const float flCurTime = I::GlobalVarsBase->curtime;
 	
-	if (elapsed >= Vars::Misc::ChatSpammerInterval)
+	if (flCurTime - m_LastSpamTime >= Vars::Misc::ChatSpammerInterval)
 	{
 		// Get next message and send it
 		std::string message = GetNextMessage();
@@ -99,7 +98,7 @@ void CChat::Run()
 			I::EngineClient->ClientCmd_Unrestricted(cmd.c_str());
 			
 			// Update last spam time
-			m_LastSpamTime = now;
+			m_LastSpamTime = flCurTime;
 		}
 	}
 }
