@@ -31,6 +31,8 @@ public:
 	uintptr_t m_dwC_TFPlayer_TeamFortress_SetSpeed = 0x0;
 	uintptr_t m_dwClientModeShared = 0x0;
 	uintptr_t m_dwClientModeShared_OverrideView = 0x0;
+	uintptr_t m_dwCL_Move = 0x0;
+	uintptr_t m_dwCNetChan_Transmit = 0x0;
 };
 
 namespace U { inline CUtil_Offsets Offsets; }

@@ -18,5 +18,11 @@ void CGlobal_Hooks::Initialize()
 		Hooks::ClientModeShared_OverrideView::Initialize();
 	}
 
+	// Hook CL_Move using signature
+	if (U::Offsets.m_dwCL_Move)
+	{
+		Hooks::CL_Move::Initialize();
+	}
+
 	XASSERT(MH_EnableHook(MH_ALL_HOOKS) != MH_STATUS::MH_OK);
 }

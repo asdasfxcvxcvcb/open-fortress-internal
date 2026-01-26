@@ -33,4 +33,7 @@ void CUtil_Offsets::Initialize()
 	
 	// OverrideView function signature (vtable index 12, not 16!)
 	GETPATT(m_dwClientModeShared_OverrideView, "client.dll", "55 8B EC 83 EC ? 57 E8 ? ? ? ? 8B F8 89 7D");
+
+	GETPATT(m_dwCL_Move, "engine.dll", "55 8B EC 83 EC ? 83 3D ? ? ? ? ? 0F 8C ? ? ? ? E8");
+	GETPATT(m_dwCNetChan_Transmit, "engine.dll", "55 8B EC B8 ? ? ? ? E8 ? ? ? ? A1 ? ? ? ? 53 56 8B D9");
 }

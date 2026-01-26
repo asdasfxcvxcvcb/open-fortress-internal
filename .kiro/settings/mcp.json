@@ -25,7 +25,8 @@
         "disasm",
         "disasm",
         "find_bytes",
-        "imports"
+        "imports",
+        "find"
       ]
     }
   }

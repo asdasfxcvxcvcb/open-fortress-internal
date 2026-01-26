@@ -176,9 +176,11 @@
     <ClCompile Include="Features\ESP\ESP.cpp" />
     <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
     <ClCompile Include="Features\Menu\Menu.cpp" />
+    <ClCompile Include="Features\SequenceFreezing\SequenceFreezing.cpp" />
     <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_CreateMove.cpp" />
     <ClCompile Include="Hooks\Definitions\ClientModeShared_OverrideView.cpp" />
+    <ClCompile Include="Hooks\Definitions\CL_Move.cpp" />
     <ClCompile Include="Hooks\Definitions\CPrediction_RunCommand.cpp" />
     <ClCompile Include="Hooks\Definitions\DirectX9_EndScene.cpp" />
     <ClCompile Include="Hooks\Definitions\DirectX9_Reset.cpp" />
@@ -232,6 +234,7 @@
     <ClInclude Include="Features\LagRecords\LagRecords.h" />
     <ClInclude Include="Features\Menu\Menu.h" />
     <ClInclude Include="Features\Nospread\Nospread.h" />
+    <ClInclude Include="Features\SequenceFreezing\SequenceFreezing.h" />
     <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
     <ClInclude Include="Features\Vars.h" />
     <ClInclude Include="Hooks\Hooks.h" />
@@ -298,6 +301,7 @@
     <ClInclude Include="SDK\Interfaces\IInput.h" />
     <ClInclude Include="SDK\Interfaces\IMatSystemSurface.h" />
     <ClInclude Include="SDK\Interfaces\IMoveHelper.h" />
+    <ClInclude Include="SDK\Interfaces\INetChannel.h" />
     <ClInclude Include="SDK\Interfaces\IPrediction.h" />
     <ClInclude Include="SDK\Interfaces\IVEngineClient.h" />
     <ClInclude Include="SDK\Interfaces\IVModelInfoClient.h" />

@@ -898,6 +898,22 @@ void CMenu::DrawMiscTab()
 			ImGui::SliderFloat("Max Delta", &Vars::Misc::AutoStrafeMaxDelta, 10.0f, 180.0f, "%.0f°");
 			ImGui::PopItemWidth();
 		}
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		// Sequence Freezing
+		ImGui::Text("Sequence Freezing");
+		ImGui::Separator();
+		
+		ImGui::Checkbox("Enable Sequence Freezing", &Vars::SequenceFreezing::Enabled);
+		
+		if (Vars::SequenceFreezing::Enabled)
+		{
+			ImGui::PushItemWidth(200);
+			ImGui::SliderInt("Sequence Amount", &Vars::SequenceFreezing::Amount, 1, 2500);
+			ImGui::PopItemWidth();
+		}
 	}
 	else if (miscSubTab == 1)
 	{

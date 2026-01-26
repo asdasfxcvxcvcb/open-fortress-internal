@@ -10,6 +10,7 @@ CREATE_HOOK(IBaseClientDLL_LevelShutdown, U::VFunc.Get<void*>(I::BaseClientDLL, 
 CREATE_HOOK(IBaseClientDLL_LevelInitPostEntity, U::VFunc.Get<void*>(I::BaseClientDLL, 6u), void, __fastcall, void* ecx, void* edx);
 CREATE_HOOK(CPrediction_RunCommand, U::VFunc.Get<void*>(I::Prediction, 17u), void, __fastcall, void* ecx, void* edx, C_BasePlayer* player, CUserCmd* ucmd, IMoveHelper* moveHelper);
 CREATE_HOOK(ISurface_LockCursor, U::VFunc.Get<void*>(I::MatSystemSurface, 62u), void, __fastcall, void* ecx, void* edx);
+CREATE_HOOK(CL_Move, U::Offsets.m_dwCL_Move, void, __cdecl, float accumulated_extra_samples, bool bFinalTick);
 
 class CGlobal_Hooks
 {

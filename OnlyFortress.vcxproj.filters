@@ -55,6 +55,8 @@
     <ClCompile Include="Features\Menu\ImGuiBridge.cpp" />
     <ClCompile Include="Features\Menu\Menu.cpp" />
     <ClCompile Include="Features\Thirdperson\Thirdperson.cpp" />
+    <ClCompile Include="Features\SequenceFreezing\SequenceFreezing.cpp" />
+    <ClCompile Include="Hooks\Definitions\CL_Move.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util\Util.h" />
@@ -170,6 +172,8 @@
     <ClInclude Include="Features\Thirdperson\Thirdperson.h" />
     <ClInclude Include="Features\Vars.h" />
     <ClInclude Include="Features\Backtrack\Backtrack.h" />
+    <ClInclude Include="SDK\Interfaces\INetChannel.h" />
+    <ClInclude Include="Features\SequenceFreezing\SequenceFreezing.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SDK\Includes\gametrace.h" />

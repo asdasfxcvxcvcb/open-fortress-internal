@@ -154,6 +154,12 @@ namespace Vars
 		REGISTER_VAR(Backtrack, bool, DrawSkeleton, false)
 		REGISTER_VAR(Backtrack, float, flBacktrackWindowSize, 145.0f)
 	}
+
+	namespace SequenceFreezing
+	{
+		REGISTER_VAR(SequenceFreezing, bool, Enabled, false)
+		REGISTER_VAR(SequenceFreezing, int, Amount, 14) // Default amount to shift sequence (1-2500)
+	}
 	
 	namespace Colors
 	{
