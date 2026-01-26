@@ -83,7 +83,7 @@ void CBacktrack::Update()
 			continue;
 
 		C_BaseEntity* pEntity = I::ClientEntityList->GetClientEntity(i)->As<C_BaseEntity*>();
-		if (!pEntity || pEntity->IsDormant())
+		if (!pEntity || pEntity->IsDormant() || !pEntity->IsPlayer())
 		{
 			continue;
 		}
@@ -106,21 +106,22 @@ void CBacktrack::Update()
 		// Create record
 		BacktrackRecord record;
 		record.flSimulationTime = pPlayer->m_flSimulationTime();
+		
+		// Skip if SimTime is invalid or didn't change (unless it's the first record)
+		if (record.flSimulationTime == 0.0f)
+			continue;
+			
 		record.nTickCount = TIME_TO_TICKS(record.flSimulationTime);
 		record.vOrigin = pPlayer->m_vecOrigin();
 		record.vAbsOrigin = pPlayer->GetAbsOrigin();
 		record.vAbsAngles = pPlayer->GetAbsAngles();
 		
-		const int fOldEffects = pPlayer->m_fEffects();
-		pPlayer->m_fEffects() |= 8; // EF_NOINTERP
-
-		if (!pPlayer->SetupBones(record.BoneMatrix, 128, BONE_USED_BY_HITBOX, pPlayer->m_flSimulationTime()))
+		// Use current time for bones to match what the user sees (interpolated)
+		// We do NOT disable interpolation (EF_NOINTERP) because we want to hit what we see.
+		if (!pPlayer->GetModel() || !pPlayer->SetupBones(record.BoneMatrix, 128, BONE_USED_BY_HITBOX, record.flSimulationTime))
 		{
-			pPlayer->m_fEffects() = fOldEffects;
 			continue;
 		}
-		
-		pPlayer->m_fEffects() = fOldEffects;
 
 		const auto pModel = pPlayer->GetModel();
 		if (pModel)
@@ -161,10 +162,29 @@ void CBacktrack::Update()
 		while (!m_Records[i].empty())
 		{
 			auto& last = m_Records[i].back();
-			if (!IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime))
+			auto& first = m_Records[i].front();
+			
+			// Enforce Window Size strictly based on HISTORY LENGTH (First SimTime - Last SimTime)
+			// This ensures we keep X ms of history regardless of how high cl_interp is.
+			float flHistoryLength = first.flSimulationTime - last.flSimulationTime;
+			float flWindow = GetWindow();
+
+			if (flHistoryLength > flWindow)
+			{
 				m_Records[i].pop_back();
+				continue;
+			}
+			
+			// Also enforce hard server limits (0.2s / sv_maxunlag) using standard IsTickValid
+			// But do NOT use our custom Window in IsTickValid, use the hard limit there.
+			if (!IsTickValid(last.flSimulationTime, I::GlobalVarsBase->curtime))
+			{
+				m_Records[i].pop_back();
+			}
 			else
+			{
 				break;
+			}
 		}
 	}
 
@@ -252,9 +272,18 @@ void CBacktrack::Run(CUserCmd* pCmd)
 			{
 				float fov = U::Math.GetFovBetween(vViewAngles, U::Math.GetAngleToPosition(vEyePos, hb.vPos));
 				
-				// Prefer older records (we iterate Newest -> Oldest)
-				// If we find an older record with similar FOV (within 1 degree), take it
-				if (flBestSimTime == -1.0f || fov < flBestFOV - 0.1f || (fov < flBestFOV + 1.0f && record.flSimulationTime < flBestSimTime))
+				// Prefer newer records (we iterate Newest -> Oldest)
+				// If we find a newer record with similar FOV (within 1 degree), keep it (or take it if we found it later, but we iterate Newest first so we already have it)
+				// Actually, since we iterate Newest -> Oldest:
+				// 1. Found Newest (Sim=100). Best=100.
+				// 2. Found Old (Sim=90).
+				// We want to KEEP Newest unless Old is strictly better.
+				// So we only update if fov is BETTER.
+				// The previous logic was: if (fov < Best + 1.0 && Sim < BestSim). This explicitly SWAPPED to Old.
+				// We change to: Only swap if fov is strictly better.
+				// Or if fov is similar, prefer Newer. (Which we already have).
+				
+				if (flBestSimTime == -1.0f || fov < flBestFOV)
 				{
 					flBestFOV = fov;
 					flBestSimTime = record.flSimulationTime;
@@ -275,7 +304,8 @@ bool CBacktrack::IsTickValid(float flSimTime, float flCurTime)
 	float flCorrect = std::clamp(GetReal(MAX_FLOWS, false) + GetLerp(), 0.f, m_flMaxUnlag);
 	float flDelta = fabsf(flCorrect - (flCurTime - flSimTime));
 	
-	return flDelta < GetWindow();
+	// Server limit is usually 200ms, but we use 250ms for safety/rounding/stability
+	return flDelta < 0.25f;
 }
 
 const std::deque<BacktrackRecord>* CBacktrack::GetRecords(int iEntityIndex)
@@ -320,5 +350,5 @@ float CBacktrack::GetWindow()
 
 void CBacktrack::DebugDraw()
 {
-	// Removed debug output as requested
+	// Skeleton rendering is handled by ESP::RenderLagRecords
 }

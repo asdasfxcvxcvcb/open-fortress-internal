@@ -572,7 +572,7 @@ void CMenu::DrawAimbotTab()
 	ImGui::Checkbox("Enable Backtrack", &Vars::Backtrack::Enabled);
 	if (Vars::Backtrack::Enabled)
 	{
-		ImGui::SliderFloat("Window Size", &Vars::Backtrack::flBacktrackWindowSize, 10.0f, 140.0f, "%.0f ms");
+		ImGui::SliderFloat("Window Size", &Vars::Backtrack::flBacktrackWindowSize, 145.0f, 209.0f, "%.0f ms");
 	}
 
 	ImGui::Separator();

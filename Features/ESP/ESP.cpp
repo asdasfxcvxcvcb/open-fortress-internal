@@ -539,12 +539,18 @@ void CFeatures_ESP::RenderLagRecords(IDrawInterface* draw)
 		const auto* records = F::Backtrack.GetRecords(pPlayer->entindex());
 		if (!records || records->empty()) continue;
 
-		// Find the best record to draw (closest to user's view or last valid)
-		const BacktrackRecord* pBestRecord = &records->back();
-		
-		// If manual shooting is likely, try to show what we would hit
-		// Use a simple heuristic: if we have a valid record closer to current time, show that?
-		// Or just stick to the oldest valid one which is the "backtrack" position usually
+		// Find the oldest valid record to draw (the ghost)
+		const BacktrackRecord* pBestRecord = nullptr;
+		for (auto it = records->rbegin(); it != records->rend(); ++it)
+		{
+			if (F::Backtrack.IsTickValid(it->flSimulationTime, I::GlobalVarsBase->curtime))
+			{
+				pBestRecord = &(*it);
+				break;
+			}
+		}
+
+		if (!pBestRecord) continue;
 		
 		// Determine color
 		Color skeletonColor;
